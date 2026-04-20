@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1776363355726,
+      "tag": "0000_moaning_bucky",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1776363727210,
+      "tag": "0001_wakeful_whistler",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776678952572,
+      "tag": "0002_sticky_grandmaster",
+      "breakpoints": true
+    }
+  ]
+}
