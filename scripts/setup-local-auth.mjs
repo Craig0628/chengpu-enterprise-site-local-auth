@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Local Authentication Setup Script
- * 
- * Usage:
- *   node setup-local-auth.mjs
- *   # or
- *   pnpm setup-local-auth
+ * 文件名：setup-local-auth.mjs
+ * 文件描述：本地认证系统初始化脚本
+ * 功能：交互式创建管理员账户，配置本地认证系统
+ * 使用方法：node setup-local-auth.mjs 或 pnpm setup-local-auth
+ * 前提条件：.env.local 文件已正确配置，MySQL 数据库已创建
  */
 
 import { createHash } from 'crypto';
@@ -25,6 +24,11 @@ function question(prompt) {
   });
 }
 
+/**
+ * 代码段作用：对密码进行 PBKDF2-SHA256 加密（脚本内部使用）
+ * 返回格式：salt$iterations$hash
+ * 迭代次数：100000（增强安全性）
+ */
 async function hashPassword(password) {
   const { pbkdf2Sync } = await import('crypto');
   const salt = randomBytes(32).toString('hex');

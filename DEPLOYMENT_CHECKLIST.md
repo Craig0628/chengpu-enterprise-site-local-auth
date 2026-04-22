@@ -23,7 +23,7 @@
 - [ ] 确认数据库存在
 
 ### 数据库迁移
-- [ ] 运行迁移：`pnpm drizzle-kit migrate`
+- [ ] 运行迁移：`pnpm db:push`
 - [ ] 验证新字段已添加：
   ```sql
   SHOW COLUMNS FROM users;
@@ -31,6 +31,22 @@
   应看到：
   - `passwordHash` (varchar(255))
   - `isLocalAuthEnabled` (boolean)
+
+### 初始化企业信息表
+- [ ] 运行企业设置初始化：`pnpm init:company`
+- [ ] 验证 company_settings 表已创建：
+  ```sql
+  SHOW TABLES LIKE 'company_settings';
+  ```
+- [ ] 验证默认数据已插入：
+  ```sql
+  SELECT * FROM company_settings;
+  ```
+  应包含：
+  - name: 绍兴市顺丰聚氨酯有限公司
+  - address: 浙江省绍兴市越城区孙端街道许家桥村7幢1楼
+  - phone: 13567550208
+  - email: sxsfjaz@126.com
 
 ## 👤 管理员账户创建
 
@@ -57,12 +73,23 @@
 - [ ] 运行 `pnpm install`
 - [ ] 等待安装完成
 
+### 初始化演示数据（可选）
+- [ ] 运行 `pnpm init:seed` 初始化演示数据
+- [ ] 或使用一键初始化：`pnpm init:all`
+- [ ] 验证产品、分类、新闻、轮播图数据已插入：
+  ```sql
+  SELECT COUNT(*) FROM products;
+  SELECT COUNT(*) FROM categories;
+  SELECT COUNT(*) FROM news;
+  SELECT COUNT(*) FROM banners;
+  ```
+
 ### 构建验证
 - [ ] 运行 `pnpm build`
 - [ ] 检查是否有编译错误
 
 ### 类型检查
-- [ ] 运行 `pnpm type-check`
+- [ ] 运行 `pnpm check`
 - [ ] 确保没有类型错误
 
 ## 🧪 测试
@@ -118,6 +145,15 @@
 - [ ] 点击用户卡片中的"退出登录"
 - [ ] 验证重定向到登陆页面
 - [ ] 验证 app_session_id Cookie 被清除
+
+### 企业信息显示验证
+- [ ] 访问首页 `http://localhost:3000`
+- [ ] 验证页脚显示正确的企业信息：
+  - [ ] 企业名称：绍兴市顺丰聚氨酯有限公司
+  - [ ] 企业地址：浙江省绍兴市越城区孙端街道许家桥村7幢1楼
+  - [ ] 企业电话：13567550208
+  - [ ] 企业邮箱：sxsfjaz@126.com
+- [ ] 验证企业信息从数据库读取（而非硬编码）
 
 ## 📊 数据验证
 
@@ -202,8 +238,44 @@
 
 - 详细文档：[LOCAL_AUTH_GUIDE.md](./LOCAL_AUTH_GUIDE.md)
 - 实现总结：[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)
+- 部署指南：[WINDOWS_DEPLOYMENT.md](./WINDOWS_DEPLOYMENT.md)（Windows 部署）
 - API 参考：见 LOCAL_AUTH_GUIDE.md 中的 API 路由章节
 - 故障排除：见 LOCAL_AUTH_GUIDE.md 中的故障排除章节
+
+## ⚡ 快速命令参考
+
+### 常用初始化命令
+```bash
+# 只初始化数据库
+pnpm db:push
+
+# 初始化企业信息表
+pnpm init:company
+
+# 初始化演示数据
+pnpm init:seed
+
+# 一键初始化所有内容（数据库 + 企业设置 + 演示数据）
+pnpm init:all
+
+# 完整部署流程（包括创建管理员账户）
+pnpm install && pnpm init:all && node scripts/setup-local-auth.mjs
+```
+
+### 开发和构建
+```bash
+# 启动开发服务器
+pnpm dev
+
+# 类型检查
+pnpm check
+
+# 构建生产版本
+pnpm build
+
+# 生产服务器
+pnpm start
+```
 
 ## 🎉 完成标记
 

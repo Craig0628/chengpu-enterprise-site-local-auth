@@ -76,7 +76,7 @@ export function ProductsPage() {
                 <Card className="group overflow-hidden rounded-[1.75rem] border-slate-200 shadow-none transition hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(14,116,144,0.12)]">
                   <div className="aspect-[16/10] overflow-hidden bg-slate-100">
                     <img
-                      src={product.coverImage || "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=1200&q=80"}
+                      src={product.coverImage || "/images/组合聚醚.png"}
                       alt={product.name}
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
@@ -124,7 +124,7 @@ export function ProductDetailPage({ params }: { params: { slug: string } }) {
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-50">
               <img
-                src={product.coverImage || "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=1200&q=80"}
+                src={product.coverImage || "/images/组合聚醚.png"}
                 alt={product.name}
                 className="h-[460px] w-full object-cover"
               />
@@ -180,7 +180,7 @@ export function ApplicationsPage() {
               className={`grid overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-none lg:grid-cols-[0.55fr_0.45fr] ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}
             >
               <div className="min-h-[320px] overflow-hidden">
-                <img src={scene.imageUrl} alt={scene.title} className="h-full w-full object-cover" />
+                <img src={scene.imageUrl || "/images/冷库工程1.png"} alt={scene.title} className="h-full w-full object-cover" />
               </div>
               <div className="flex flex-col justify-center p-8 sm:p-10">
                 <p className="text-xs uppercase tracking-[0.3em] text-sky-700">{scene.subtitle}</p>
@@ -299,12 +299,12 @@ export function AboutPage() {
           <div className="space-y-6">
             <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8">
               <p className="text-sm uppercase tracking-[0.28em] text-sky-700">Company Intro</p>
-              <h2 className="mt-3 text-3xl font-semibold text-slate-950">绍兴市辰晟聚氨酯有限公司</h2>
+              <h2 className="mt-3 text-3xl font-semibold text-slate-950">绍兴市顺丰聚氨酯有限公司</h2>
               <p className="mt-4 text-base leading-8 text-slate-600">{aboutPageData.summary}</p>
             </div>
             <div className="overflow-hidden rounded-[2rem] border border-slate-200">
               <img
-                src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1400&q=80"
+                src="/images/header.png"
                 alt="企业展示"
                 className="h-[340px] w-full object-cover"
               />

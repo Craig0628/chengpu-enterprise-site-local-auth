@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Menu, Phone, X } from "lucide-react";
 import { PropsWithChildren, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -15,8 +16,10 @@ const navItems = [
 export function SiteShell({ children }: PropsWithChildren) {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { settings } = useCompanySettings();
+  
   const currentLabel = useMemo(
-    () => navItems.find(item => item.path === location)?.label ?? "辰晟聚氨酯",
+    () => navItems.find(item => item.path === location)?.label ?? "顺丰聚氨酯",
     [location],
   );
 
@@ -25,12 +28,16 @@ export function SiteShell({ children }: PropsWithChildren) {
       <header className="sticky top-0 z-50 border-b border-blue-100 bg-white/92 backdrop-blur">
         <div className="container flex h-18 items-center justify-between gap-6 py-3">
           <Link href="/" className="flex items-center gap-3 min-w-0">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-600 to-blue-900 text-sm font-bold text-white shadow-lg shadow-sky-200/70">
-              PU
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white border border-sky-200 shadow-lg shadow-sky-200/70">
+              <img 
+                src="/images/logo.png" 
+                alt="Shunfeng Logo" 
+                className="h-10 w-10 object-contain"
+              />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-lg font-semibold tracking-[0.18em] text-slate-900">辰晟聚氨酯</p>
-              <p className="truncate text-xs uppercase tracking-[0.36em] text-sky-700">CHENGSHENG POLYURETHANE</p>
+              <p className="truncate text-lg font-semibold tracking-[0.18em] text-slate-900">顺丰聚氨酯</p>
+              <p className="truncate text-xs uppercase tracking-[0.36em] text-sky-700">SHUN FENG POLYURETHANE</p>
             </div>
           </Link>
 
@@ -54,7 +61,7 @@ export function SiteShell({ children }: PropsWithChildren) {
           <div className="hidden items-center gap-3 lg:flex">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Phone className="h-4 w-4 text-sky-700" />
-              <span>0575-88032608</span>
+              <span>{settings.phone || "13567550208"}</span>
             </div>
           </div>
 
@@ -106,9 +113,9 @@ export function SiteShell({ children }: PropsWithChildren) {
           <div>
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.28em] text-sky-200">公司信息</p>
             <div className="space-y-3 text-sm text-white/80">
-              <p>地址：浙江省绍兴市示例工业园区聚氨酯产业路 18 号</p>
-              <p>电话：0575-88032608</p>
-              <p>邮箱：info@chengshengpu.com</p>
+              <p>地址：{settings.address || "浙江省绍兴市越城区孙端街道许家桥村7幢1楼"}</p>
+              <p>电话：{settings.phone || "13567550208"}</p>
+              <p>邮箱：{settings.email || "sxsfjaz@126.com"}</p>
             </div>
           </div>
           <div>

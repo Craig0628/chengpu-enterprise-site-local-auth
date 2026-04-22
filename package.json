@@ -10,7 +10,10 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "init:company": "node scripts/init-company-settings.mjs",
+    "init:seed": "node scripts/seed-enterprise-content.mjs",
+    "init:all": "pnpm db:push && pnpm init:company && pnpm init:seed"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

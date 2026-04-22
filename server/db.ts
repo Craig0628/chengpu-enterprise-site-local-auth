@@ -1,8 +1,16 @@
+/**
+ * 文件名：db.ts
+ * 文件描述：数据库操作模块
+ * 功能：统一管理所有数据库操作，包括用户、产品、新闻、Banner等的增删改查
+ * 特点：使用 Drizzle ORM 提供类型安全的数据库查询
+ */
+
 import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   banners,
   categories,
+  companySettings,
   InsertBanner,
   InsertCategory,
   InsertNewsItem,
@@ -14,8 +22,14 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
+// 数据库连接单例
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/**
+ * 代码段作用：获取数据库连接实例（单例模式）
+ * 调用方法：const db = await getDb(); 然后使用 db.select() 等操作
+ * 特点：懒加载，首次调用时创建连接
+ */
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -32,6 +46,11 @@ export async function getDb() {
   return _db;
 }
 
+/**
+ * 代码段作用：更新或插入用户信息（upsert 操作）
+ * 调用方法：upsertUser({ openId: "用户ID", email: "邮箱", name: "用户名" ... })
+ * 参数说明：user 对象包含用户的各项信息，openId 是必需的唯一标识
+ */
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
@@ -502,4 +521,70 @@ export async function listLocalAuthUsers() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(users).where(eq(users.isLocalAuthEnabled, true)).orderBy(desc(users.createdAt));
+}
+
+// ============================================================================
+// Company Settings Functions - 企业信息管理
+// ============================================================================
+
+/**
+ * 获取企业信息（所有设置）
+ */
+export async function getCompanySettings() {
+  const db = await getDb();
+  if (!db) return {};
+
+  const settings = await db.select().from(companySettings);
+  const result: Record<string, string> = {};
+  
+  for (const setting of settings) {
+    result[setting.key] = setting.value || "";
+  }
+  
+  return result;
+}
+
+/**
+ * 获取单个企业设置值
+ */
+export async function getCompanySetting(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(companySettings)
+    .where(eq(companySettings.key, key))
+    .limit(1);
+
+  return result[0]?.value || null;
+}
+
+/**
+ * 创建或更新企业设置
+ */
+export async function upsertCompanySetting(key: string, value: string, description?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await db
+    .select()
+    .from(companySettings)
+    .where(eq(companySettings.key, key))
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(companySettings)
+      .set({ value, description, updatedAt: new Date() })
+      .where(eq(companySettings.key, key));
+  } else {
+    await db.insert(companySettings).values({
+      key,
+      value,
+      description,
+    });
+  }
+
+  return getCompanySetting(key);
 }

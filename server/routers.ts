@@ -1,4 +1,12 @@
-import { COOKIE_NAME } from "@shared/const";
+/**
+ * 文件名：routers.ts
+ * 文件描述：tRPC API 路由定义模块
+ * 功能：定义所有后端 API 接口，包括认证、产品、新闻、Banner、分类等管理接口
+ * 调用方式：客户端通过 trpc.auth.localLogin()、trpc.products.list() 等调用
+ * 特点：使用 Zod 进行请求数据验证，分为公开、受保护和管理员权限三个级别的过程
+ */
+
+import { COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -14,6 +22,8 @@ import {
   deleteCategory,
   deleteNews,
   deleteProduct,
+  getCompanySettings,
+  getCompanySetting,
   getHomepageData,
   getNewsBySlug,
   getProductBySlug,
@@ -30,8 +40,8 @@ import {
   updateProduct,
   updateUserPassword,
   updateUserRole,
+  upsertCompanySetting,
 } from "./db";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
@@ -110,8 +120,8 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      // 登出时需要使用与登录时相同的 cookie options 才能正确删除 cookie
+      ctx.res.clearCookie(COOKIE_NAME, SESSION_COOKIE_OPTIONS);
       return { success: true } as const;
     }),
     localLogin: publicProcedure
@@ -287,7 +297,7 @@ export const appRouter = router({
       return item;
     }),
     about: publicProcedure.query(() => ({
-      companyName: "绍兴市辰晟聚氨酯有限公司",
+      companyName: "绍兴市顺丰聚氨酯有限公司",
       slogan: "聚焦聚氨酯材料研发、生产、销售的一体化制造服务企业。",
       intro:
         "公司长期围绕聚氨酯发泡、保温与工业材料应用展开技术积累，产品覆盖冷库、太阳能热水器、管道保温及相关工业构件领域。",
@@ -298,11 +308,41 @@ export const appRouter = router({
       ],
       honors: ["质量管理规范化", "工业应用经验丰富", "多行业配套服务"],
       contacts: {
-        phone: "0575-00000000",
-        email: "info@chengshengpu.com",
-        address: "浙江省绍兴市柯桥区示例工业园区",
+        phone: "13567550208",
+        email: "sxsfjaz@126.com",
+        address: "浙江省绍兴市越城区孙端街道许家桥村7幢1楼",
       },
     })),
+  }),
+  company: router({
+    // 公开获取企业信息
+    getSettings: publicProcedure.query(async () => {
+      return getCompanySettings();
+    }),
+    // 管理员更新企业信息
+    updateSettings: adminProcedure
+      .input(
+        z.object({
+          name: z.string().optional(),
+          address: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          fax: z.string().optional(),
+          website: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const updates = [];
+        if (input.name !== undefined) updates.push(upsertCompanySetting("name", input.name, "企业名称"));
+        if (input.address !== undefined) updates.push(upsertCompanySetting("address", input.address, "企业地址"));
+        if (input.phone !== undefined) updates.push(upsertCompanySetting("phone", input.phone, "企业电话"));
+        if (input.email !== undefined) updates.push(upsertCompanySetting("email", input.email, "企业邮箱"));
+        if (input.fax !== undefined) updates.push(upsertCompanySetting("fax", input.fax, "企业传真"));
+        if (input.website !== undefined) updates.push(upsertCompanySetting("website", input.website, "企业网站"));
+        
+        await Promise.all(updates);
+        return getCompanySettings();
+      }),
   }),
   admin: router({
     dashboard: protectedProcedure.query(async ({ ctx }) => ({

@@ -97,23 +97,42 @@ pnpm drizzle-kit generate
 pnpm drizzle-kit migrate
 ```
 
-（可选）运行初始化脚本填充演示数据：
+### 5. 初始化企业信息表
+
+运行企业设置初始化脚本（创建企业信息表并设置默认值）：
 ```bash
-node scripts/seed-enterprise-content.mjs
+pnpm init:company
 ```
 
-### 5. 启动开发服务器
+**说明：** 此脚本将创建 `company_settings` 表并初始化以下信息：
+- 企业名称：绍兴市顺丰聚氨酯有限公司
+- 企业地址：浙江省绍兴市越城区孙端街道许家桥村7幢1楼
+- 企业电话：13567550208
+- 企业邮箱：sxsfjaz@126.com
 
+这些信息可以通过管理后台随时修改。
+
+### 6. 初始化演示数据（可选）
+
+运行初始化脚本填充演示产品、新闻、轮播图等数据：
+```bash
+pnpm init:seed
+```
+
+**快速初始化所有内容：**
+```bash
+pnpm init:all
+```
+此命令依次执行数据库迁移、企业设置初始化和演示数据初始化。
+
+### 7. 启动开发服务器
+
+初始化完成后，启动开发服务器：
 ```bash
 pnpm dev
 ```
 
-输出示例：
-```
-Server running on http://localhost:3000/
-```
-
-在浏览器中打开 `http://localhost:3000` 访问官网。
+启动后，打开浏览器访问 `http://localhost:3000` 查看官网。
 
 ## 常见问题
 

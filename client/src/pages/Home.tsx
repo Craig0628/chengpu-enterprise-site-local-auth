@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { applicationScenes, fallbackBanners, fallbackNews, fallbackProducts, formatDate } from "@/lib/site-data";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { ArrowRight, Building2, Factory, Medal, Newspaper, Phone, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
@@ -25,6 +26,8 @@ export default function Home() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+  
+  const { settings } = useCompanySettings();
 
   const banners = (homeQuery.data?.banners?.length ? homeQuery.data.banners : fallbackBanners) as typeof fallbackBanners;
   const featuredProducts = (homeQuery.data?.featuredProducts?.length ? homeQuery.data.featuredProducts : fallbackProducts).slice(0, 4);
@@ -36,7 +39,7 @@ export default function Home() {
     <SiteShell>
       <section className="relative overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0">
-          <img src={banners[0]?.imageUrl ?? fallbackBanners[0].imageUrl} alt={banners[0]?.title ?? "Banner"} className="h-full w-full object-cover opacity-50" />
+          <img src={banners[0]?.imageUrl ?? "/images/header.png"} alt={banners[0]?.title ?? "Banner"} className="h-full w-full object-cover opacity-50" />
           <div className="absolute inset-0 bg-linear-to-r from-slate-950/90 via-slate-950/50 to-sky-950/50" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(56,189,248,0.25),transparent_22%),radial-gradient(circle_at_20%_80%,rgba(37,99,235,0.28),transparent_20%)]" />
         </div>
@@ -101,7 +104,7 @@ export default function Home() {
           <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.32em] text-sky-700">Company Profile</p>
-              <h3 className="mt-3 text-3xl font-semibold text-slate-950">绍兴市辰晟聚氨酯有限公司</h3>
+              <h3 className="mt-3 text-3xl font-semibold text-slate-950">绍兴市顺丰聚氨酯有限公司</h3>
               <p className="mt-4 text-base leading-8 text-slate-600">
                 公司围绕聚氨酯保温与工业材料应用场景构建产品体系，覆盖组合聚醚、冷库板、复合板、工程喷涂和构件配套等方向。前台官网用于专业展示品牌与产品，后台管理系统用于统一维护新闻、产品、Banner 与管理员权限。
               </p>
@@ -109,7 +112,7 @@ export default function Home() {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="overflow-hidden rounded-[1.5rem] border border-sky-100 md:col-span-2">
                 <img
-                  src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1400&q=80"
+                  src="/images/建筑外墙保温1.png"
                   alt="企业基地"
                   className="h-56 w-full object-cover"
                 />
@@ -161,7 +164,7 @@ export default function Home() {
                 <Card className="group h-full overflow-hidden rounded-[1.8rem] border-slate-200 bg-white shadow-none transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(2,132,199,0.12)]">
                   <div className="aspect-[5/4] overflow-hidden bg-slate-100">
                     <img
-                      src={product.coverImage || "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=1200&q=80"}
+                      src={product.coverImage || "/images/组合聚醚.png"}
                       alt={product.name}
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
@@ -262,12 +265,12 @@ export default function Home() {
             <div className="rounded-[1.4rem] bg-sky-50 p-5">
               <Building2 className="h-6 w-6 text-sky-700" />
               <p className="mt-4 text-sm text-slate-500">地址</p>
-              <p className="mt-2 font-medium text-slate-900">浙江省绍兴市示例工业园区</p>
+              <p className="mt-2 font-medium text-slate-900">{settings.address || "浙江省绍兴市越城区孙端街道许家桥村7幢1楼"}</p>
             </div>
             <div className="rounded-[1.4rem] bg-sky-50 p-5">
               <Phone className="h-6 w-6 text-sky-700" />
               <p className="mt-4 text-sm text-slate-500">电话</p>
-              <p className="mt-2 font-medium text-slate-900">0575-88032608</p>
+              <p className="mt-2 font-medium text-slate-900">{settings.phone || "13567550208"}</p>
             </div>
             <div className="rounded-[1.4rem] bg-sky-50 p-5">
               <Newspaper className="h-6 w-6 text-sky-700" />

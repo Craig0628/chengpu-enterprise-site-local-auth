@@ -1,4 +1,15 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+/**
+ * 文件名：sdk.ts
+ * 文件描述：认证 SDK 核心模块
+ * 功能：处理 JWT token 生成、验证、本地用户认证等，支持 OAuth 和本地认证两种方式
+ * 调用方式：
+ *   - 本地认证：sdk.authenticateLocalUser(email, password) -> { openId, name }
+ *   - Token 创建：sdk.createSessionToken(openId) -> JWT token
+ *   - Token 验证：sdk.verifySession(token) -> { openId, appId, name } 或 null
+ *   - 用户认证：sdk.authenticateRequest(req) -> User 对象
+ */
+
+import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS, SESSION_COOKIE_OPTIONS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -154,15 +165,23 @@ class SDKServer {
     return new Map(Object.entries(parsed));
   }
 
+  /**
+   * 代码段作用：获取会话密钥（转换为 Uint8Array 格式用于 JWT 签名）
+   * 密钥来源：环境变量 JWT_SECRET
+   */
   private getSessionSecret() {
     const secret = ENV.cookieSecret;
     return new TextEncoder().encode(secret);
   }
 
   /**
-   * Create a session token for a Manus user openId
-   * @example
-   * const sessionToken = await sdk.createSessionToken(userInfo.openId);
+   * 代码段作用：创建会话 token（JWT 格式）
+   * 调用方法：await sdk.createSessionToken(user.openId, { name: "用户名" }) -> JWT token 字符串
+   * 参数说明：
+   *   - openId: 用户唯一标识
+   *   - options.name: 可选，用户名
+   *   - options.expiresInMs: 可选，过期时间（毫秒，默认 1 年）
+   * 返回值：签名的 JWT token
    */
   async createSessionToken(
     openId: string,
@@ -319,17 +338,26 @@ class SDKServer {
   }
 
   /**
-   * Local Authentication: authenticate user by email and password
-   * @example
-   * const user = await sdk.authenticateLocalUser(email, password, res);
+   * 代码段作用：本地认证（邮箱 + 密码登录）
+   * 调用方法：await sdk.authenticateLocalUser(email, password, res) -> User 对象
+   * 参数说明：
+   *   - email: 用户邮箱
+   *   - password: 用户密码（明文，会在服务端验证和加密比对）
+   *   - res: Express Response 对象，用于设置 cookie
+   * 返回值：认证成功的用户对象
+   * 错误处理：验证失败时抛出 Error
+   * 流程：
+   *   1. 从数据库查询用户
+   *   2. 验证本地认证是否启用和密码是否正确
+   *   3. 生成 JWT token
+   *   4. 设置 HttpOnly Cookie
+   *   5. 更新用户最后登录时间
    */
   async authenticateLocalUser(
     email: string,
     password: string,
     res: import("express").Response
   ): Promise<User> {
-    console.log("[Auth] authenticateLocalUser called with email:", email);
-    
     const { verifyPassword } = await import("./password");
 
     if (!email || !password) {
@@ -355,15 +383,9 @@ class SDKServer {
 
     // Create session and set cookie
     const sessionToken = await this.createSessionToken(user.openId, { name: user.name || email });
-    const cookieOptions = {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      secure: false, // Development only
-    } as const;
     res.cookie(COOKIE_NAME, sessionToken, {
-      ...cookieOptions,
-      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+      ...SESSION_COOKIE_OPTIONS,
+      maxAge: ONE_YEAR_MS, // 1 year
     });
 
     console.log("[Auth] Authentication successful, setting cookie");

@@ -48,6 +48,8 @@ function createContext(role: Role | null): TrpcContext {
           openId: `${role}-openid`,
           email: `${role}@example.com`,
           name: `${role}-user`,
+          passwordHash: null,
+          isLocalAuthEnabled: false,
           loginMethod: "manus",
           role,
           createdAt: new Date(),
@@ -74,7 +76,7 @@ describe("enterprise routes", () => {
     const caller = appRouter.createCaller(createContext(null));
     const result = await caller.site.about();
 
-    expect(result.companyName).toBe("绍兴市辰晟聚氨酯有限公司");
+    expect(result.companyName).toBe("绍兴市顺丰聚氨酯有限公司");
     expect(result.timeline.length).toBeGreaterThan(0);
     expect(result.contacts.phone).toContain("0575");
   });

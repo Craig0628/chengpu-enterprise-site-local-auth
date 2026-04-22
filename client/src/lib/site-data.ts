@@ -10,7 +10,7 @@ export const siteConfig = {
   },
 };
 
-const heroImage = "https://d2xsxph8kpxj0f.cloudfront.net/310519663565602556/gUi327Nha93ku2F9QFqWEU/chengpu-hero_c24ceae9.svg";
+const heroImage = "/images/header.png";
 
 export const fallbackData = {
   banners: [

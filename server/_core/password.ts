@@ -1,7 +1,15 @@
+/**
+ * 文件名：password.ts
+ * 文件描述：密码加密和验证模块
+ * 功能：提供密码哈希、验证、临时密码生成等功能，使用 PBKDF2-SHA256 算法保证安全性
+ */
+
 import * as crypto from "crypto";
 
 /**
- * Hash a password using PBKDF2
+ * 代码段作用：使用 PBKDF2-SHA256 算法对密码进行加密
+ * 调用方法：hashPassword("用户输入的密码") 返回 Promise<string> 类型的加密后密码
+ * 加密格式：salt$iterations$hash（以$分隔）
  */
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(32).toString("hex");
@@ -21,6 +29,11 @@ export async function hashPassword(password: string): Promise<string> {
 
 /**
  * Verify a password against its hash
+ */
+/**
+ * 代码段作用：验证用户输入的密码是否与存储的哈希密码匹配
+ * 调用方法：verifyPassword("用户输入密码", "数据库存储的密码哈希") 返回 Promise<boolean>
+ * 注意：使用 timingSafeEqual 防止时序攻击
  */
 export async function verifyPassword(
   password: string,
@@ -68,6 +81,11 @@ export async function verifyPassword(
 
 /**
  * Generate a random temporary password for admin setup
+ */
+/**
+ * 代码段作用：生成随机临时密码用于管理员初始化
+ * 调用方法：generateTemporaryPassword() 返回指定长度的随机密码字符串
+ * 默认长度：12 个字符
  */
 export function generateTemporaryPassword(length: number = 12): string {
   const chars =

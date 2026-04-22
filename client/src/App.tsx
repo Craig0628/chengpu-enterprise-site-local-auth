@@ -1,3 +1,13 @@
+/**
+ * 文件名：App.tsx
+ * 文件描述：主应用组件
+ * 功能：定义应用的路由结构、主题提供者、全局错误边界
+ * 包含的路由：
+ *   - 官网路由：首页、产品、新闻、关于、应用等
+ *   - 后台路由：/admin 管理员面板
+ * 调用方式：作为 React 应用的入口组件
+ */
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
