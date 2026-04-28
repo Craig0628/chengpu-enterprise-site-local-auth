@@ -97,20 +97,40 @@ pnpm drizzle-kit generate
 pnpm drizzle-kit migrate
 ```
 
-### 5. 初始化企业信息表
+### 5. 配置图片存储（生产环境）
 
-运行企业设置初始化脚本（创建企业信息表并设置默认值）：
-```bash
-pnpm init:company
+**选择存储方案：**
+
+#### 方案A：S3云存储（推荐）
+1. 创建AWS S3存储桶
+2. 配置CORS策略：
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "POST"],
+    "AllowedOrigins": ["https://yourdomain.com"],
+    "ExposeHeaders": []
+  }
+]
 ```
 
-**说明：** 此脚本将创建 `company_settings` 表并初始化以下信息：
-- 企业名称：绍兴市顺丰聚氨酯有限公司
-- 企业地址：浙江省绍兴市越城区孙端街道许家桥村7幢1楼
-- 企业电话：13567550208
-- 企业邮箱：sxsfjaz@126.com
+3. 在 `.env.local` 中配置：
+```env
+BUILT_IN_FORGE_API_URL=https://your-s3-bucket.s3.amazonaws.com
+BUILT_IN_FORGE_API_KEY=your-aws-access-key
+```
 
-这些信息可以通过管理后台随时修改。
+#### 方案B：本地服务器存储（简单部署）
+如果不配置S3变量，系统将自动使用本地存储：
+- 图片保存到：`./client/public/images/`
+- URL格式：`/images/filename.png`
+- 适合小型应用或测试环境
+
+**⚠️ 本地存储注意事项：**
+- 定期备份 `client/public/images/` 目录
+- 监控磁盘使用空间
+- 考虑使用Nginx等Web服务器提供静态文件服务
 
 ### 6. 初始化演示数据（可选）
 

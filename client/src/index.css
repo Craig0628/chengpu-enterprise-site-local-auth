@@ -40,11 +40,28 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-primary: #1E4B8F;          /* 原为 rgb(5,0,255) */
+  --color-primary-foreground: #ffffff;
+  --shadow-card: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
+  --radius-card: 15px;
+  --radius-card-sm: 12px;
+  --ease-card: cubic-bezier(0, 0, 0, 1.43);
+  --screen-sm: 640px;
+  --screen-md: 768px;
+  --screen-lg: 1024px;
+  --screen-xl: 1280px;
+}
+
+@keyframes slide-in-up {
+  from { transform: translateY(80px); }
+  to { transform: translateY(0); }
+}
+@utility animate-card-in {
+  animation: slide-in-up 0.5s var(--ease-card);
 }
 
 :root {
-  --primary: var(--color-blue-500);
-  --primary-foreground: var(--color-blue-50);
   --sidebar-primary: var(--color-blue-400);
   --sidebar-primary-foreground: var(--color-blue-50);
   --chart-1: var(--color-blue-200);
@@ -134,24 +151,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +166,36 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
   }
+
+  .card-custom {
+    @apply rounded-[var(--radius-card)] shadow-[var(--shadow-card)] bg-white transition-all duration-500 ease-[var(--ease-card)];
+  }
+  .card-custom-mobile {
+    @apply rounded-[var(--radius-card-sm)];
+  }
+
+  .thumbs-swiper .swiper-slide-thumb-active {
+    opacity: 1;
+  }
+  .thumbs-swiper .swiper-slide {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }  
+}
+
+/* 新增：用于“关于我们”区域右侧公司名称下方的英文副标题样式 */
+.text-muted-foreground {
+  color: var(--muted-foreground);
 }

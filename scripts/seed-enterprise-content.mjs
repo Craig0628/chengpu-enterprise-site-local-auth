@@ -1,4 +1,8 @@
 import mysql from 'mysql2/promise';
+import { config } from 'dotenv';
+
+// 加载环境变量
+config({ path: '.env.local' });
 
 // 本地图片路径（替代云端URL）
 const heroImage = '/images/header.png';

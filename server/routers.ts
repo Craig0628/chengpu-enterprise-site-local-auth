@@ -55,7 +55,11 @@ const categoryInputSchema = z.object({
   parentId: z.number().nullable().optional(),
   level: z.number().int().min(1).default(1),
   sortOrder: z.number().int().default(0),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -66,7 +70,11 @@ const productInputSchema = z.object({
   excerpt: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   parameters: z.string().nullable().optional(),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
   gallery: z.string().nullable().optional(),
   isFeatured: z.boolean().default(false),
   isPublished: z.boolean().default(true),
@@ -78,7 +86,11 @@ const newsInputSchema = z.object({
   slug: z.string().min(1),
   summary: z.string().nullable().optional(),
   content: z.string().nullable().optional(),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
   isPublished: z.boolean().default(true),
   publishedAt: z.number().optional(),
 });
@@ -86,7 +98,7 @@ const newsInputSchema = z.object({
 const bannerInputSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().nullable().optional(),
-  imageUrl: z.string().url(),
+  imageUrl: z.union([z.string().url(), z.string().regex(/^\/images\/.+/, "Invalid image path")]),
   ctaLabel: z.string().nullable().optional(),
   ctaLink: z.string().nullable().optional(),
   sortOrder: z.number().int().default(0),

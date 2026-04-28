@@ -2,6 +2,8 @@
 // Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
 
 import { ENV } from './_core/env';
+import fs from 'fs';
+import path from 'path';
 
 type StorageConfig = { baseUrl: string; apiKey: string };
 
@@ -16,6 +18,37 @@ function getStorageConfig(): StorageConfig {
   }
 
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+}
+
+// 本地文件存储实现（用于开发环境或简单部署）
+async function localStoragePut(
+  relKey: string,
+  data: Buffer | Uint8Array | string,
+  contentType = "application/octet-stream"
+): Promise<{ key: string; url: string }> {
+  // 确保images目录存在（生产环境建议使用独立的静态文件服务器）
+  const imagesDir = path.join(process.cwd(), 'client', 'public', 'images');
+  if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+  }
+
+  // 生成唯一文件名
+  const key = appendHashSuffix(normalizeKey(relKey));
+  const filePath = path.join(imagesDir, key);
+
+  // 确保子目录存在
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  // 写入文件
+  const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
+  fs.writeFileSync(filePath, buffer);
+
+  // 返回本地URL
+  const url = `/images/${key}`;
+  return { key, url };
 }
 
 function buildUploadUrl(baseUrl: string, relKey: string): URL {
@@ -80,6 +113,12 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
+  // 在开发环境中使用本地文件存储
+  if (process.env.NODE_ENV !== "production" && (!ENV.forgeApiUrl || !ENV.forgeApiKey)) {
+    return localStoragePut(relKey, data, contentType);
+  }
+
+  // 生产环境使用Forge API
   const { baseUrl, apiKey } = getStorageConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
   const uploadUrl = buildUploadUrl(baseUrl, key);
