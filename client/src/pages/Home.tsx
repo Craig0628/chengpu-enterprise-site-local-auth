@@ -35,13 +35,17 @@ export default function Home() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+  const applicationsQuery = trpc.site.applications.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   
   const { settings } = useCompanySettings();
 
   const banners = (homeQuery.data?.banners?.length ? homeQuery.data.banners : fallbackBanners) as typeof fallbackBanners;
   const featuredProducts = (homeQuery.data?.featuredProducts?.length ? homeQuery.data.featuredProducts : fallbackProducts).slice(0, 4);
   const latestNews = (homeQuery.data?.latestNews?.length ? homeQuery.data.latestNews : fallbackNews).slice(0, 3);
-  const appScenes = useMemo(() => applicationScenes, []);
+  const appScenes = homeQuery.data?.applications ?? applicationsQuery.data ?? applicationScenes;
   
   // 应用领域轮播状态
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);

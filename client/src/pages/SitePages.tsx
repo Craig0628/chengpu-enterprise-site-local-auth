@@ -33,10 +33,10 @@ export function ProductsPage() {
 
   return (
     <SiteShell>
-      <section className="bg-linear-to-b from-sky-950 via-blue-950 to-slate-950 py-20 text-white">
+      <section className="bg-linear-to-b from-slate-100 via-slate-200 to-slate-300 py-20 text-slate-700">
         <div className="container grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
           <SectionHeading eyebrow="Products" title="产品中心" description="支持多级分类展示、详情页访问以及后台可维护的产品信息体系。" />
-          <div className="rounded-[2rem] border border-white/10 bg-white/8 p-6 text-sm leading-7 text-white/80 backdrop-blur">
+          <div className="rounded-[2rem] border border-slate-300/10 bg-slate-100/8 p-6 text-sm leading-7 text-slate-700/80 backdrop-blur">
             当前页面以类目切换方式承接多级分类结构，分类与产品数据由后台统一维护，并可通过产品详情页呈现图片、描述与参数信息。
           </div>
         </div>
@@ -108,14 +108,14 @@ export function ProductDetailPage({ params }: { params: { slug: string } }) {
 
   return (
     <SiteShell>
-      <section className="bg-linear-to-r from-sky-950 via-blue-900 to-slate-900 py-18 text-white">
+      <section className="bg-linear-to-r from-slate-100 via-slate-200 to-slate-300 py-18 text-slate-700">
         <div className="container space-y-4">
-          <Link href="/products" className="inline-flex items-center gap-2 text-sm text-sky-200 transition hover:text-white">
+          <Link href="/products" className="inline-flex items-center gap-2 text-sm text-slate-600 transition hover:text-slate-900">
             <ChevronLeft className="h-4 w-4" /> 返回产品中心
           </Link>
-          <p className="text-sm uppercase tracking-[0.28em] text-sky-200">产品详情</p>
+          <p className="text-sm uppercase tracking-[0.28em] text-slate-600">产品详情</p>
           <h1 className="text-4xl font-semibold">{product.name}</h1>
-          <p className="max-w-3xl text-base leading-8 text-white/80">{product.excerpt || product.description}</p>
+          <p className="max-w-3xl text-base leading-8 text-slate-700/80">{product.excerpt || product.description}</p>
         </div>
       </section>
 
@@ -164,17 +164,20 @@ export function ProductDetailPage({ params }: { params: { slug: string } }) {
 }
 
 export function ApplicationsPage() {
+  const applicationsQuery = trpc.site.applications.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
+  const scenes = applicationsQuery.data ?? applicationScenes;
+
   return (
     <SiteShell>
-      <section className="bg-linear-to-r from-sky-950 via-blue-950 to-slate-950 py-20 text-white">
+      <section className="bg-linear-to-r from-slate-100 via-slate-200 to-slate-300 py-20 text-slate-700">
         <div className="container space-y-5">
-          <SectionHeading eyebrow="Applications" title="应用领域" description="聚氨酯材料在冷链设备、建筑保温、太阳能热水器和工业构件中的典型应用。" />
+          <SectionHeading eyebrow="Applications" title="产品应用" description="聚氨酯材料在冷链设备、建筑保温、太阳能热水器和工业构件中的典型应用。" />
         </div>
       </section>
 
       <section className="bg-white py-16">
         <div className="container grid gap-8">
-          {applicationScenes.map((scene: any, index: number) => (
+          {scenes.map((scene: any, index: number) => (
             <div
               key={scene.title}
               className={`grid overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-none lg:grid-cols-[0.55fr_0.45fr] ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}
@@ -206,7 +209,7 @@ export function NewsPage() {
 
   return (
     <SiteShell>
-      <section className="bg-linear-to-r from-sky-950 via-blue-950 to-slate-950 py-20 text-white">
+      <section className="bg-linear-to-r from-slate-100 via-slate-200 to-slate-300 py-20 text-slate-700">
         <div className="container space-y-5">
           <SectionHeading eyebrow="News" title="新闻资讯" description="支持新闻列表、分页浏览与新闻详情页，内容可由后台统一增删改查。" />
         </div>
@@ -254,14 +257,14 @@ export function NewsDetailPage({ params }: { params: { slug: string } }) {
 
   return (
     <SiteShell>
-      <section className="bg-linear-to-r from-sky-950 via-blue-900 to-slate-900 py-18 text-white">
+      <section className="bg-linear-to-r from-slate-100 via-slate-200 to-slate-300 py-18 text-slate-700">
         <div className="container space-y-4">
-          <Link href="/news" className="inline-flex items-center gap-2 text-sm text-sky-200 transition hover:text-white">
+          <Link href="/news" className="inline-flex items-center gap-2 text-sm text-slate-600 transition hover:text-slate-900">
             <ChevronLeft className="h-4 w-4" /> 返回新闻列表
           </Link>
-          <p className="text-sm uppercase tracking-[0.28em] text-sky-200">News Detail</p>
+          <p className="text-sm uppercase tracking-[0.28em] text-slate-600">News Detail</p>
           <h1 className="max-w-4xl text-4xl font-semibold leading-tight">{item.title}</h1>
-          <p className="text-sm text-white/70">发布时间：{formatDate((item as any).publishedAt || (item as any).createdAt)}</p>
+          <p className="text-sm text-slate-700/70">发布时间：{formatDate((item as any).publishedAt || (item as any).createdAt)}</p>
         </div>
       </section>
 
@@ -288,7 +291,7 @@ export function NewsDetailPage({ params }: { params: { slug: string } }) {
 export function AboutPage() {
   return (
     <SiteShell>
-      <section className="bg-linear-to-r from-sky-950 via-blue-950 to-slate-950 py-20 text-white">
+      <section className="bg-linear-to-r from-slate-100 via-slate-200 to-slate-300 py-20 text-slate-700">
         <div className="container space-y-5">
           <SectionHeading eyebrow="About Us" title="关于我们" description="展示企业介绍、发展历程、资质荣誉与联系方式，延续制造业官网的专业调性。" />
         </div>

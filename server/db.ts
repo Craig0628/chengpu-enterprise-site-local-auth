@@ -8,9 +8,11 @@
 import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  applicationScenes,
   banners,
   categories,
   companySettings,
+  InsertApplicationScene,
   InsertBanner,
   InsertCategory,
   InsertNewsItem,
@@ -156,6 +158,52 @@ export async function deleteCategory(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(categories).where(eq(categories.id, id));
   return { success: true } as const;
+}
+
+export async function listApplicationScenes(activeOnly = false) {
+  const db = await getDb();
+  if (!db) return [];
+  const whereClause = activeOnly ? eq(applicationScenes.isActive, true) : undefined;
+  return db
+    .select()
+    .from(applicationScenes)
+    .where(whereClause)
+    .orderBy(asc(applicationScenes.sortOrder), desc(applicationScenes.id));
+}
+
+export async function getApplicationSceneById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(applicationScenes).where(eq(applicationScenes.id, id)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function createApplicationScene(input: InsertApplicationScene) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = (await db.insert(applicationScenes).values(input)) as { insertId?: number };
+  return getApplicationSceneById(Number(result.insertId));
+}
+
+export async function updateApplicationScene(id: number, input: Partial<InsertApplicationScene>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(applicationScenes).set(input).where(eq(applicationScenes.id, id));
+  return getApplicationSceneById(id);
+}
+
+export async function deleteApplicationScene(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(applicationScenes).where(eq(applicationScenes.id, id));
+  return { success: true } as const;
+}
+
+export async function countApplicationScenes() {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`count(*)` }).from(applicationScenes);
+  return Number(result[0]?.count ?? 0);
 }
 
 export async function listProducts(filters?: { categoryId?: number; publishedOnly?: boolean; search?: string }) {
@@ -402,11 +450,12 @@ export async function countBanners() {
 }
 
 export async function getHomepageData() {
-  const [bannerList, categoryList, productList, newsList] = await Promise.all([
+  const [bannerList, categoryList, productList, newsList, applicationList] = await Promise.all([
     listBanners(true),
     listCategories(),
     listProducts({ publishedOnly: true }),
     listNews({ page: 1, pageSize: 3, publishedOnly: true }),
+    listApplicationScenes(true),
   ]);
 
   const topLevelCategories = categoryList.filter(item => item.parentId === null || item.parentId === undefined);
@@ -417,6 +466,7 @@ export async function getHomepageData() {
     categories: topLevelCategories,
     featuredProducts,
     latestNews: newsList.items,
+    applications: applicationList,
     stats: {
       foundedYear: 2008,
       partners: 1008,

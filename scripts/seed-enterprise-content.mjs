@@ -59,6 +59,23 @@ async function main() {
     );
   }
 
+  const applications = [
+    [1, '冷库工程', '大型冷库保温工程承包，确保冷链物流的温度稳定性', '/images/冷库工程1.png', '❄️', 1, 1],
+    [2, '渔船保温', '渔船冷藏舱隔热保温，保证海产品新鲜度', '/images/渔船保温1.png', '🚢', 2, 1],
+    [3, '建筑外墙保温', '建筑节能保温系统，提高建筑能效', '/images/建筑外墙保温1.png', '🏢', 3, 1],
+    [4, '管道保温', '工业管道隔热保温，减少热损失', '/images/管道保温1.png', '🔧', 4, 1],
+    [5, '罐体保温', '啤酒罐、食品发酵罐等罐体保温应用', '/images/罐体保温1.jpg', '🏭', 5, 1],
+  ];
+
+  for (const row of applications) {
+    await connection.execute(
+      `INSERT INTO application_scenes (id, title, description, imageUrl, icon, sortOrder, isActive)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), imageUrl = VALUES(imageUrl), icon = VALUES(icon), sortOrder = VALUES(sortOrder), isActive = VALUES(isActive)`,
+      row,
+    );
+  }
+
   const news = [
     [1, '工程喷涂系列组合料在建筑领域的应用趋势', 'spray-material-building-trend', '从施工效率、节能表现与耐久性角度，观察聚氨酯喷涂材料的行业价值。', '<p>随着建筑节能要求不断提高，聚氨酯喷涂材料在围护结构中的应用越来越广。其优势主要体现在保温效率、施工连续性与复杂结构适应能力等方面。</p><p>在工业厂房、冷链设施与公共建筑节能改造中，该类材料能够显著提升整体热工性能。</p>', sprayImage, 1, Date.now()],
     [2, '聚氨酯冷库板在冷链工程中的选型建议', 'cold-room-board-selection-guide', '围绕芯材性能、面材方案与施工节点控制，梳理冷库板选型要点。', '<p>冷链工程对保温材料的稳定性和密封性要求较高，冷库板的结构强度、导热性能与接口处理方式均会影响长期运行表现。</p>', boardImage, 1, Date.now()],

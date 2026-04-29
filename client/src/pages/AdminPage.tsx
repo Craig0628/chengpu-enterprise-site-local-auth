@@ -13,6 +13,7 @@ const menuItems = [
   { key: "dashboard", label: "仪表盘", icon: <BarChart3 className="h-4 w-4" /> },
   { key: "news", label: "新闻管理", icon: <Newspaper className="h-4 w-4" /> },
   { key: "products", label: "产品管理", icon: <Package2 className="h-4 w-4" /> },
+  { key: "applications", label: "产品应用", icon: <Layers3 className="h-4 w-4" /> },
   { key: "banners", label: "Banner 管理", icon: <ImageUp className="h-4 w-4" /> },
   { key: "categories", label: "分类管理", icon: <Layers3 className="h-4 w-4" /> },
   { key: "users", label: "管理员管理", icon: <Users className="h-4 w-4" /> },
@@ -55,6 +56,16 @@ const emptyCategoryForm = {
   description: "",
   parentId: "",
   level: "1",
+};
+
+const emptyApplicationForm = {
+  title: "",
+  subtitle: "",
+  description: "",
+  imageUrl: "",
+  icon: "",
+  sortOrder: 0,
+  isActive: true,
 };
 
 async function fileToBase64(file: File) {
@@ -133,6 +144,8 @@ export default function AdminPage() {
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [editingBannerId, setEditingBannerId] = useState<number | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [applicationForm, setApplicationForm] = useState(emptyApplicationForm);
+  const [editingApplicationId, setEditingApplicationId] = useState<number | null>(null);
 
   const dashboardQuery = trpc.admin.dashboard.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const usersQuery = trpc.admin.users.useQuery(undefined, { enabled: user?.role === "admin", retry: false, refetchOnWindowFocus: false });
@@ -140,6 +153,7 @@ export default function AdminPage() {
   const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
   const bannersQuery = trpc.admin.banners.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
   const categoriesQuery = trpc.admin.categories.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
+  const applicationsQuery = trpc.admin.applications.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
 
   const createNewsMutation = trpc.admin.createNews.useMutation({ onSuccess: async () => { toast.success("新闻已发布"); setNewsForm(emptyNewsForm); setEditingNewsId(null); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
   const updateNewsMutation = trpc.admin.updateNews.useMutation({ onSuccess: async () => { toast.success("新闻已更新"); setNewsForm(emptyNewsForm); setEditingNewsId(null); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
@@ -153,6 +167,9 @@ export default function AdminPage() {
   const createCategoryMutation = trpc.admin.createCategory.useMutation({ onSuccess: async () => { toast.success("分类已新增"); setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
   const updateCategoryMutation = trpc.admin.updateCategory.useMutation({ onSuccess: async () => { toast.success("分类已更新"); setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
   const deleteCategoryMutation = trpc.admin.deleteCategory.useMutation({ onSuccess: async () => { toast.success("分类已删除"); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
+  const createApplicationMutation = trpc.admin.createApplication.useMutation({ onSuccess: async () => { toast.success("应用已新增"); setApplicationForm(emptyApplicationForm); setEditingApplicationId(null); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
+  const updateApplicationMutation = trpc.admin.updateApplication.useMutation({ onSuccess: async () => { toast.success("应用已更新"); setApplicationForm(emptyApplicationForm); setEditingApplicationId(null); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
+  const deleteApplicationMutation = trpc.admin.deleteApplication.useMutation({ onSuccess: async () => { toast.success("应用已删除"); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
   const updateUserRoleMutation = trpc.admin.updateUserRole.useMutation({ onSuccess: async () => { toast.success("角色已更新"); await utils.admin.users.invalidate(); } });
   const uploadImageMutation = trpc.admin.uploadImage.useMutation();
 
@@ -452,6 +469,82 @@ export default function AdminPage() {
                       <Button variant="outline" className="rounded-full" disabled={!canManageContent} onClick={() => deleteCategoryMutation.mutate({ id: item.id })}>删除</Button>
                     </div>
                   </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {activeKey === "applications" ? (
+        <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+          <Card className="rounded-[1.8rem] border-slate-200 shadow-none">
+            <CardHeader><CardTitle>新增产品应用</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <Input placeholder="应用标题" value={applicationForm.title} onChange={e => setApplicationForm(current => ({ ...current, title: e.target.value }))} />
+              <Input placeholder="副标题" value={applicationForm.subtitle} onChange={e => setApplicationForm(current => ({ ...current, subtitle: e.target.value }))} />
+              <Textarea placeholder="应用描述" value={applicationForm.description} onChange={e => setApplicationForm(current => ({ ...current, description: e.target.value }))} />
+              <div className="space-y-2">
+                <Input placeholder="图片 URL" value={applicationForm.imageUrl} onChange={e => setApplicationForm(current => ({ ...current, imageUrl: e.target.value }))} />
+                <Input type="file" accept="image/*" onChange={e => uploadImage(e, url => setApplicationForm(current => ({ ...current, imageUrl: url })))} />
+              </div>
+              <Input placeholder="图标（可选，emoji 或短文本）" value={applicationForm.icon} onChange={e => setApplicationForm(current => ({ ...current, icon: e.target.value }))} />
+              <Input type="number" min={0} placeholder="排序值" value={String(applicationForm.sortOrder)} onChange={e => setApplicationForm(current => ({ ...current, sortOrder: Number(e.target.value) }))} />
+              <div className="flex items-center gap-3">
+                <input
+                  id="app-is-active"
+                  type="checkbox"
+                  checked={applicationForm.isActive}
+                  onChange={e => setApplicationForm(current => ({ ...current, isActive: e.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-500"
+                />
+                <label htmlFor="app-is-active" className="text-sm text-slate-600">启用应用</label>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button className="rounded-full bg-sky-700 px-6 hover:bg-sky-800" disabled={!canManageContent || createApplicationMutation.isPending || updateApplicationMutation.isPending} onClick={() => {
+                  if (!ensureRequired(applicationForm.title, "应用标题")) return;
+                  editingApplicationId ? updateApplicationMutation.mutate({
+                    id: editingApplicationId,
+                    ...applicationForm,
+                  }) : createApplicationMutation.mutate(applicationForm);
+                }}>
+                  {editingApplicationId ? "更新应用" : "保存应用"}
+                </Button>
+                {editingApplicationId ? <Button type="button" variant="outline" className="rounded-full" onClick={() => { setEditingApplicationId(null); setApplicationForm(emptyApplicationForm); }}>取消编辑</Button> : null}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-[1.8rem] border-slate-200 shadow-none">
+            <CardHeader><CardTitle>产品应用列表</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              {(applicationsQuery.data || []).map(item => (
+                <div key={item.id} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-semibold text-slate-950">{item.title}</p>
+                      <p className="mt-2 text-sm text-slate-500">{item.subtitle || ""}</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="rounded-full" disabled={!canManageContent} onClick={() => {
+                        setEditingApplicationId(item.id);
+                        setApplicationForm({
+                          title: item.title,
+                          subtitle: item.subtitle || "",
+                          description: item.description || "",
+                          imageUrl: item.imageUrl || "",
+                          icon: item.icon || "",
+                          sortOrder: item.sortOrder ?? 0,
+                          isActive: item.isActive ?? true,
+                        });
+                      }}>编辑</Button>
+                      <Button variant="outline" className="rounded-full" disabled={!canManageContent} onClick={() => deleteApplicationMutation.mutate({ id: item.id })}>删除</Button>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                    <span>排序：{item.sortOrder ?? 0}</span>
+                    <span>状态：{item.isActive ? "已启用" : "已禁用"}</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
                 </div>
               ))}
             </CardContent>
