@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
@@ -132,6 +133,39 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (value: 
   );
 }
 
+function getErrorMessage(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) {
+    const anyError = error as any;
+
+    if (anyError.data?.zodError) {
+      const fieldErrors = anyError.data.zodError.fieldErrors;
+      const messages = Object.values(fieldErrors).flat().filter(Boolean) as string[];
+      if (messages.length > 0) return messages[0];
+      const formErrors = anyError.data.zodError.formErrors?.flat().filter(Boolean) as string[];
+      if (formErrors?.length) return formErrors[0];
+    }
+
+    if (typeof anyError.message === "string") {
+      try {
+        const parsed = JSON.parse(anyError.message);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.message) {
+          return parsed[0].message;
+        }
+      } catch {
+        // ignore parse failures
+      }
+      return anyError.message;
+    }
+  }
+  if (error && typeof error === "object") {
+    const anyError = error as any;
+    if (typeof anyError.message === "string") return anyError.message;
+    if (Array.isArray(anyError) && anyError[0]?.message) return anyError[0].message;
+  }
+  return "创建失败，请检查输入后重试。";
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -146,6 +180,13 @@ export default function AdminPage() {
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [applicationForm, setApplicationForm] = useState(emptyApplicationForm);
   const [editingApplicationId, setEditingApplicationId] = useState<number | null>(null);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserConfirmPassword, setNewUserConfirmPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"user" | "admin">("admin");
+  const [newUserError, setNewUserError] = useState<string | null>(null);
 
   const dashboardQuery = trpc.admin.dashboard.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const usersQuery = trpc.admin.users.useQuery(undefined, { enabled: user?.role === "admin", retry: false, refetchOnWindowFocus: false });
@@ -171,6 +212,23 @@ export default function AdminPage() {
   const updateApplicationMutation = trpc.admin.updateApplication.useMutation({ onSuccess: async () => { toast.success("应用已更新"); setApplicationForm(emptyApplicationForm); setEditingApplicationId(null); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
   const deleteApplicationMutation = trpc.admin.deleteApplication.useMutation({ onSuccess: async () => { toast.success("应用已删除"); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
   const updateUserRoleMutation = trpc.admin.updateUserRole.useMutation({ onSuccess: async () => { toast.success("角色已更新"); await utils.admin.users.invalidate(); } });
+  const registerLocalUserMutation = trpc.auth.localRegister.useMutation({
+    onSuccess: async () => {
+      toast.success("本地账户已创建");
+      setNewUserEmail("");
+      setNewUserName("");
+      setNewUserPassword("");
+      setNewUserConfirmPassword("");
+      setNewUserRole("admin");
+      setNewUserError(null);
+      setIsCreateUserOpen(false);
+      await utils.auth.listLocalUsers.invalidate();
+      await utils.admin.users.invalidate();
+    },
+    onError: (error) => {
+      setNewUserError(getErrorMessage(error));
+    },
+  });
   const uploadImageMutation = trpc.admin.uploadImage.useMutation();
 
   const metrics = dashboardQuery.data?.metrics;
@@ -554,7 +612,79 @@ export default function AdminPage() {
 
       {activeKey === "users" ? (
         <Card className="rounded-[1.8rem] border-slate-200 shadow-none">
-          <CardHeader><CardTitle>管理员管理</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle>管理员管理</CardTitle>
+              {isAdmin ? (
+                <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="rounded-full bg-sky-700 text-white hover:bg-sky-800">新增</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>新增管理员</DialogTitle>
+                      <DialogDescription>创建本地登录账号并指定角色。</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      {newUserError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{newUserError}</p> : null}
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">邮箱</label>
+                          <Input value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="admin@example.com" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">用户名</label>
+                          <Input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="管理员名称" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">密码</label>
+                          <Input type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="至少8个字符" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">确认密码</label>
+                          <Input type="password" value={newUserConfirmPassword} onChange={e => setNewUserConfirmPassword(e.target.value)} placeholder="再次输入密码" />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-sm font-medium text-slate-700">角色</label>
+                          <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as "user" | "admin")} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="admin">管理员</option>
+                            <option value="user">普通用户</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setIsCreateUserOpen(false)} className="rounded-full">取消</Button>
+                        <Button
+                          className="rounded-full"
+                          disabled={registerLocalUserMutation.isLoading || !newUserEmail || !newUserName || !newUserPassword || !newUserConfirmPassword || newUserPassword !== newUserConfirmPassword}
+                          onClick={async () => {
+                            setNewUserError(null);
+                            if (newUserPassword !== newUserConfirmPassword) {
+                              setNewUserError("两次输入的密码不一致");
+                              return;
+                            }
+
+                            try {
+                              await registerLocalUserMutation.mutateAsync({
+                                email: newUserEmail,
+                                name: newUserName,
+                                password: newUserPassword,
+                                role: newUserRole,
+                              });
+                            } catch (error) {
+                              setNewUserError(getErrorMessage(error));
+                            }
+                          }}
+                        >
+                          {registerLocalUserMutation.isLoading ? "创建中..." : "创建账户"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              ) : null}
+            </div>
+          </CardHeader>
           <CardContent className="space-y-4">
             {!isAdmin ? <p className="text-sm text-slate-500">当前账号仅可查看后台概览，管理员管理仅对 admin 开放。</p> : null}
             {(usersQuery.data || []).map(item => (
