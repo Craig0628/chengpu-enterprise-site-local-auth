@@ -41,9 +41,15 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --color-primary: #1E4B8F;          /* 原为 rgb(5,0,255) */
-  --color-primary-foreground: #ffffff;
-  --shadow-card: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
+  --color-primary: #165DFF;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #E8F3FF;
+  --color-secondary-foreground: #1F2937;
+  --color-muted: #F5F7FA;
+  --color-muted-foreground: #8C8C8C;
+  --color-accent: #FF7D00;
+  --color-accent-foreground: #FFFFFF;
+  --shadow-card: 0px 2px 4px 0px rgba(0, 0, 0, 0.12);
   --radius-card: 15px;
   --radius-card-sm: 12px;
   --ease-card: cubic-bezier(0, 0, 0, 1.43);
@@ -62,37 +68,37 @@
 }
 
 :root {
-  --sidebar-primary: var(--color-blue-400);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-200);
-  --chart-2: var(--color-blue-300);
-  --chart-3: var(--color-blue-400);
-  --chart-4: var(--color-blue-500);
-  --chart-5: var(--color-blue-600);
+  --sidebar-primary: #165DFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --chart-1: #D6E6FF;
+  --chart-2: #A7C8FF;
+  --chart-3: #73A7FF;
+  --chart-4: #3E7DFF;
+  --chart-5: #165DFF;
   --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  --background: #FFFFFF;
+  --foreground: #1F2937;
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+  --secondary: #E8F3FF;
+  --secondary-foreground: #1F2937;
+  --muted: #F5F7FA;
+  --muted-foreground: #8C8C8C;
+  --accent: #FF7D00;
+  --accent-foreground: #FFFFFF;
+  --destructive: #C13D2D;
+  --destructive-foreground: #ffffff;
+  --border: #F5F7FA;
+  --input: #F5F7FA;
+  --ring: #165DFF;
+  --sidebar: #111827;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-accent: #E8F3FF;
+  --sidebar-accent-foreground: #1F2937;
+  --sidebar-border: #E8F3FF;
+  --sidebar-ring: #165DFF;
 }
 
 .dark {
@@ -198,4 +204,40 @@
 /* 新增：用于“关于我们”区域右侧公司名称下方的英文副标题样式 */
 .text-muted-foreground {
   color: var(--muted-foreground);
+}
+
+.bg-surface {
+  background-color: #F5F7FA;
+}
+
+.bg-surface-muted {
+  background-color: #E8F3FF;
+}
+
+.border-muted {
+  border-color: #F5F7FA;
+}
+
+.text-heading {
+  color: #1F2937;
+}
+
+.text-link {
+  color: #165DFF;
+}
+
+.text-caption {
+  color: #8C8C8C;
+}
+
+.text-accent {
+  color: #165DFF;
+}
+
+.bg-primary-deep {
+  background-color: #111827;
+}
+
+.bg-primary-dark {
+  background-color: #0E42C7;
 }
