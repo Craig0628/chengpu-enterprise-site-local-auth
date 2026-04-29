@@ -555,6 +555,159 @@ pnpm start
 
 ---
 
+# 生产环境配置
+
+## 服务器访问路径配置
+
+### 1. 端口配置
+
+服务器默认监听 3000 端口，可通过环境变量修改：
+
+```bash
+# 设置服务器端口
+PORT=8080 pnpm start
+
+# 或在 .env.local 中设置
+PORT=8080
+```
+
+### 2. 反向代理配置（推荐）
+
+使用 Nginx 作为反向代理：
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    # 前端静态文件
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # API 代理
+    location /api/ {
+        proxy_pass http://localhost:3000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### 3. 前后端分离部署
+
+如果前端和后端部署在不同服务器：
+
+#### 后端配置
+
+在后端服务器的 `.env.local` 中设置：
+
+```env
+PORT=3001
+```
+
+#### 前端配置
+
+在前端构建时设置 API URL：
+
+```bash
+# 构建时设置 API 地址
+VITE_API_URL=https://api.yourdomain.com/api/trpc pnpm build
+```
+
+或在前端服务器的 `.env.local` 中设置：
+
+```env
+VITE_API_URL=https://api.yourdomain.com/api/trpc
+```
+
+#### Nginx 配置示例（前端服务器）
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location / {
+        root /path/to/dist;
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+#### Nginx 配置示例（后端服务器）
+
+```nginx
+server {
+    listen 80;
+    server_name api.yourdomain.com;
+
+    location /api/ {
+        proxy_pass http://localhost:3001/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### 4. HTTPS 配置
+
+启用 HTTPS（使用 Let's Encrypt）：
+
+```bash
+# 安装 certbot
+sudo apt install certbot python3-certbot-nginx
+
+# 获取证书
+sudo certbot --nginx -d yourdomain.com -d api.yourdomain.com
+```
+
+### 5. 环境变量示例
+
+生产环境 `.env.local`：
+
+```env
+# 数据库
+DATABASE_URL=mysql://root:SECURE_PASSWORD@mysql-host:3306/chengpu_polyurethane
+
+# 认证
+JWT_SECRET=your-very-secure-random-jwt-secret-key-here
+
+# 服务器
+HOST=0.0.0.0
+PORT=80
+NODE_ENV=production
+
+# 前端 API URL（前后端分离时）
+VITE_API_URL=https://api.yourdomain.com/api/trpc
+```
+
+### 6. 域名配置
+
+如果要通过域名直接访问（如 `http://www.shunfengpu.com/`），需要：
+
+1. **DNS 配置**：将域名 `www.shunfengpu.com` 解析到服务器IP
+2. **服务器配置**：设置 `HOST=0.0.0.0` 和 `PORT=80`
+3. **权限要求**：端口80需要管理员权限，Linux上使用 `sudo pnpm start`
+
+**注意**：生产环境建议使用反向代理（如 Nginx）而不是直接监听80端口。
+
+---
+
 # 获取帮助
 
 ## 查看日志
