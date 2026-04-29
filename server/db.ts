@@ -8,9 +8,11 @@
 import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  applicationScenes,
   banners,
   categories,
   companySettings,
+  InsertApplicationScene,
   InsertBanner,
   InsertCategory,
   InsertNewsItem,
@@ -44,6 +46,16 @@ export async function getDb() {
     console.log("[DB] DATABASE_URL not configured, _db is null");
   }
   return _db;
+}
+
+function extractInsertId(result: unknown): number | null {
+  if (typeof result === "object" && result !== null && "insertId" in result) {
+    const value = Number((result as any).insertId);
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+  return null;
 }
 
 /**
@@ -124,6 +136,13 @@ export async function updateUserRole(userId: number, role: "admin" | "user") {
   return result[0] ?? null;
 }
 
+export async function deleteUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(users).where(eq(users.id, userId));
+  return { success: true } as const;
+}
+
 export async function listCategories() {
   const db = await getDb();
   if (!db) return [];
@@ -140,8 +159,9 @@ export async function getCategoryById(id: number) {
 export async function createCategory(input: InsertCategory) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(categories).values(input)) as { insertId?: number };
-  return getCategoryById(Number(result.insertId));
+  const result = await db.insert(categories).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getCategoryById(insertId) : null;
 }
 
 export async function updateCategory(id: number, input: Partial<InsertCategory>) {
@@ -156,6 +176,53 @@ export async function deleteCategory(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(categories).where(eq(categories.id, id));
   return { success: true } as const;
+}
+
+export async function listApplicationScenes(activeOnly = false) {
+  const db = await getDb();
+  if (!db) return [];
+  const whereClause = activeOnly ? eq(applicationScenes.isActive, true) : undefined;
+  return db
+    .select()
+    .from(applicationScenes)
+    .where(whereClause)
+    .orderBy(asc(applicationScenes.sortOrder), desc(applicationScenes.id));
+}
+
+export async function getApplicationSceneById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(applicationScenes).where(eq(applicationScenes.id, id)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function createApplicationScene(input: InsertApplicationScene) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(applicationScenes).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getApplicationSceneById(insertId) : null;
+}
+
+export async function updateApplicationScene(id: number, input: Partial<InsertApplicationScene>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(applicationScenes).set(input).where(eq(applicationScenes.id, id));
+  return getApplicationSceneById(id);
+}
+
+export async function deleteApplicationScene(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(applicationScenes).where(eq(applicationScenes.id, id));
+  return { success: true } as const;
+}
+
+export async function countApplicationScenes() {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`count(*)` }).from(applicationScenes);
+  return Number(result[0]?.count ?? 0);
 }
 
 export async function listProducts(filters?: { categoryId?: number; publishedOnly?: boolean; search?: string }) {
@@ -238,8 +305,12 @@ export async function getProductById(id: number) {
 export async function createProduct(input: InsertProduct) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(products).values(input)) as { insertId?: number };
-  return getProductById(Number(result.insertId));
+  const result = await db.insert(products).values(input);
+  const insertId = extractInsertId(result);
+  if (insertId) {
+    return getProductById(insertId);
+  }
+  return getProductBySlug(input.slug);
 }
 
 export async function updateProduct(id: number, input: Partial<InsertProduct>) {
@@ -334,8 +405,9 @@ export async function getNewsById(id: number) {
 export async function createNews(input: InsertNewsItem) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(news).values(input)) as { insertId?: number };
-  return getNewsById(Number(result.insertId));
+  const result = await db.insert(news).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getNewsById(insertId) : getNewsBySlug(input.slug);
 }
 
 export async function updateNews(id: number, input: Partial<InsertNewsItem>) {
@@ -376,8 +448,9 @@ export async function getBannerById(id: number) {
 export async function createBanner(input: InsertBanner) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(banners).values(input)) as { insertId?: number };
-  return getBannerById(Number(result.insertId));
+  const result = await db.insert(banners).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getBannerById(insertId) : null;
 }
 
 export async function updateBanner(id: number, input: Partial<InsertBanner>) {
@@ -402,11 +475,12 @@ export async function countBanners() {
 }
 
 export async function getHomepageData() {
-  const [bannerList, categoryList, productList, newsList] = await Promise.all([
+  const [bannerList, categoryList, productList, newsList, applicationList] = await Promise.all([
     listBanners(true),
     listCategories(),
     listProducts({ publishedOnly: true }),
     listNews({ page: 1, pageSize: 3, publishedOnly: true }),
+    listApplicationScenes(true),
   ]);
 
   const topLevelCategories = categoryList.filter(item => item.parentId === null || item.parentId === undefined);
@@ -417,6 +491,7 @@ export async function getHomepageData() {
     categories: topLevelCategories,
     featuredProducts,
     latestNews: newsList.items,
+    applications: applicationList,
     stats: {
       foundedYear: 2008,
       partners: 1008,

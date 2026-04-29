@@ -1,4 +1,8 @@
 import mysql from 'mysql2/promise';
+import { config } from 'dotenv';
+
+// 加载环境变量
+config({ path: '.env.local' });
 
 // 本地图片路径（替代云端URL）
 const heroImage = '/images/header.png';
@@ -51,6 +55,23 @@ async function main() {
       `INSERT INTO products (id, categoryId, name, slug, excerpt, description, parameters, coverImage, gallery, isFeatured, isPublished, sortOrder)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE categoryId = VALUES(categoryId), name = VALUES(name), excerpt = VALUES(excerpt), description = VALUES(description), parameters = VALUES(parameters), coverImage = VALUES(coverImage), gallery = VALUES(gallery), isFeatured = VALUES(isFeatured), isPublished = VALUES(isPublished), sortOrder = VALUES(sortOrder)`,
+      row,
+    );
+  }
+
+  const applications = [
+    [1, '冷库工程', '大型冷库保温工程承包，确保冷链物流的温度稳定性', '/images/冷库工程1.png', '❄️', 1, 1],
+    [2, '渔船保温', '渔船冷藏舱隔热保温，保证海产品新鲜度', '/images/渔船保温1.png', '🚢', 2, 1],
+    [3, '建筑外墙保温', '建筑节能保温系统，提高建筑能效', '/images/建筑外墙保温1.png', '🏢', 3, 1],
+    [4, '管道保温', '工业管道隔热保温，减少热损失', '/images/管道保温1.png', '🔧', 4, 1],
+    [5, '罐体保温', '啤酒罐、食品发酵罐等罐体保温应用', '/images/罐体保温1.jpg', '🏭', 5, 1],
+  ];
+
+  for (const row of applications) {
+    await connection.execute(
+      `INSERT INTO application_scenes (id, title, description, imageUrl, icon, sortOrder, isActive)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), imageUrl = VALUES(imageUrl), icon = VALUES(icon), sortOrder = VALUES(sortOrder), isActive = VALUES(isActive)`,
       row,
     );
   }

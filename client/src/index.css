@@ -40,42 +40,65 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-primary: #165DFF;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #E8F3FF;
+  --color-secondary-foreground: #1F2937;
+  --color-muted: #F5F7FA;
+  --color-muted-foreground: #8C8C8C;
+  --color-accent: #FF7D00;
+  --color-accent-foreground: #FFFFFF;
+  --shadow-card: 0px 2px 4px 0px rgba(0, 0, 0, 0.12);
+  --radius-card: 15px;
+  --radius-card-sm: 12px;
+  --ease-card: cubic-bezier(0, 0, 0, 1.43);
+  --screen-sm: 640px;
+  --screen-md: 768px;
+  --screen-lg: 1024px;
+  --screen-xl: 1280px;
+}
+
+@keyframes slide-in-up {
+  from { transform: translateY(80px); }
+  to { transform: translateY(0); }
+}
+@utility animate-card-in {
+  animation: slide-in-up 0.5s var(--ease-card);
 }
 
 :root {
-  --primary: var(--color-blue-500);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-400);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-200);
-  --chart-2: var(--color-blue-300);
-  --chart-3: var(--color-blue-400);
-  --chart-4: var(--color-blue-500);
-  --chart-5: var(--color-blue-600);
+  --sidebar-primary: #165DFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --chart-1: #D6E6FF;
+  --chart-2: #A7C8FF;
+  --chart-3: #73A7FF;
+  --chart-4: #3E7DFF;
+  --chart-5: #165DFF;
   --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  --background: #FFFFFF;
+  --foreground: #1F2937;
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+  --secondary: #E8F3FF;
+  --secondary-foreground: #1F2937;
+  --muted: #F5F7FA;
+  --muted-foreground: #8C8C8C;
+  --accent: #FF7D00;
+  --accent-foreground: #FFFFFF;
+  --destructive: #C13D2D;
+  --destructive-foreground: #ffffff;
+  --border: #F5F7FA;
+  --input: #F5F7FA;
+  --ring: #165DFF;
+  --sidebar: #111827;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-accent: #E8F3FF;
+  --sidebar-accent-foreground: #1F2937;
+  --sidebar-border: #E8F3FF;
+  --sidebar-ring: #165DFF;
 }
 
 .dark {
@@ -134,24 +157,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +172,72 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
   }
+
+  .card-custom {
+    @apply rounded-[var(--radius-card)] shadow-[var(--shadow-card)] bg-white transition-all duration-500 ease-[var(--ease-card)];
+  }
+  .card-custom-mobile {
+    @apply rounded-[var(--radius-card-sm)];
+  }
+
+  .thumbs-swiper .swiper-slide-thumb-active {
+    opacity: 1;
+  }
+  .thumbs-swiper .swiper-slide {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }  
+}
+
+/* 新增：用于“关于我们”区域右侧公司名称下方的英文副标题样式 */
+.text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+.bg-surface {
+  background-color: #F5F7FA;
+}
+
+.bg-surface-muted {
+  background-color: #E8F3FF;
+}
+
+.border-muted {
+  border-color: #F5F7FA;
+}
+
+.text-heading {
+  color: #1F2937;
+}
+
+.text-link {
+  color: #165DFF;
+}
+
+.text-caption {
+  color: #8C8C8C;
+}
+
+.text-accent {
+  color: #165DFF;
+}
+
+.bg-primary-deep {
+  background-color: #111827;
+}
+
+.bg-primary-dark {
+  background-color: #0E42C7;
 }

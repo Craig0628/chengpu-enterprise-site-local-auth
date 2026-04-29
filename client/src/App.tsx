@@ -16,7 +16,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import AdminPage from "./pages/AdminPage";
-import { AboutPage, ApplicationsPage, NewsDetailPage, NewsPage, ProductDetailPage, ProductsPage } from "./pages/SitePages";
+import { AboutPage, ApplicationsPage, HonorPage, NewsDetailPage, NewsPage, ProductDetailPage, ProductsPage, ResearchPage } from "./pages/SitePages";
 
 function Router() {
   return (
@@ -25,6 +25,8 @@ function Router() {
       <Route path="/products" component={ProductsPage} />
       <Route path="/products/:slug">{params => <ProductDetailPage params={params as { slug: string }} />}</Route>
       <Route path="/applications" component={ApplicationsPage} />
+      <Route path="/honor" component={HonorPage} />
+      <Route path="/workshop" component={ResearchPage} />
       <Route path="/news" component={NewsPage} />
       <Route path="/news/:slug">{params => <NewsDetailPage params={params as { slug: string }} />}</Route>
       <Route path="/about" component={AboutPage} />

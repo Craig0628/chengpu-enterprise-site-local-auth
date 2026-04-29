@@ -17,6 +17,8 @@ import {
   createCategory,
   createLocalUser,
   createNews,
+  createApplicationScene,
+  deleteApplicationScene,
   createProduct,
   deleteBanner,
   deleteCategory,
@@ -28,18 +30,21 @@ import {
   getNewsBySlug,
   getProductBySlug,
   getUserByEmail,
+  listApplicationScenes,
   listBanners,
   listCategories,
   listLocalAuthUsers,
   listNews,
   listProducts,
   listUsers,
+  updateApplicationScene,
   updateBanner,
   updateCategory,
   updateNews,
   updateProduct,
   updateUserPassword,
   updateUserRole,
+  deleteUser,
   upsertCompanySetting,
 } from "./db";
 import { systemRouter } from "./_core/systemRouter";
@@ -55,7 +60,11 @@ const categoryInputSchema = z.object({
   parentId: z.number().nullable().optional(),
   level: z.number().int().min(1).default(1),
   sortOrder: z.number().int().default(0),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -66,7 +75,11 @@ const productInputSchema = z.object({
   excerpt: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   parameters: z.string().nullable().optional(),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
   gallery: z.string().nullable().optional(),
   isFeatured: z.boolean().default(false),
   isPublished: z.boolean().default(true),
@@ -78,7 +91,11 @@ const newsInputSchema = z.object({
   slug: z.string().min(1),
   summary: z.string().nullable().optional(),
   content: z.string().nullable().optional(),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
   isPublished: z.boolean().default(true),
   publishedAt: z.number().optional(),
 });
@@ -86,9 +103,23 @@ const newsInputSchema = z.object({
 const bannerInputSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().nullable().optional(),
-  imageUrl: z.string().url(),
+  imageUrl: z.union([z.string().url(), z.string().regex(/^\/images\/.+/, "Invalid image path")]),
   ctaLabel: z.string().nullable().optional(),
   ctaLink: z.string().nullable().optional(),
+  sortOrder: z.number().int().default(0),
+  isActive: z.boolean().default(true),
+});
+
+const applicationSceneInputSchema = z.object({
+  title: z.string().min(1),
+  subtitle: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  imageUrl: z.union([
+    z.string().url(),
+    z.string().regex(/^\/images\/.+/, "Invalid image path"),
+    z.literal("")
+  ]).nullable().optional(),
+  icon: z.string().nullable().optional(),
   sortOrder: z.number().int().default(0),
   isActive: z.boolean().default(true),
 });
@@ -296,6 +327,7 @@ export const appRouter = router({
       }
       return item;
     }),
+    applications: publicProcedure.query(async () => listApplicationScenes(true)),
     about: publicProcedure.query(() => ({
       companyName: "绍兴市顺丰聚氨酯有限公司",
       slogan: "聚焦聚氨酯材料研发、生产、销售的一体化制造服务企业。",
@@ -357,6 +389,14 @@ export const appRouter = router({
     updateUserRole: adminProcedure
       .input(z.object({ userId: z.number().int(), role: z.enum(["admin", "user"]) }))
       .mutation(async ({ input }) => updateUserRole(input.userId, input.role)),
+    deleteLocalUser: adminProcedure
+      .input(z.object({ userId: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.id === input.userId) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "不能删除当前登录用户" });
+        }
+        return deleteUser(input.userId);
+      }),
     categories: adminProcedure.query(async () => listCategories()),
     createCategory: adminProcedure
       .input(categoryInputSchema)
@@ -515,6 +555,26 @@ export const appRouter = router({
     deleteBanner: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ input }) => deleteBanner(input.id)),
+    applications: adminProcedure.query(async () => listApplicationScenes(false)),
+    createApplication: adminProcedure
+      .input(applicationSceneInputSchema)
+      .mutation(async ({ input }) => createApplicationScene(input)),
+    updateApplication: adminProcedure
+      .input(applicationSceneInputSchema.partial().extend({ id: z.number().int() }))
+      .mutation(async ({ input }) =>
+        updateApplicationScene(input.id, {
+          title: input.title,
+          subtitle: input.subtitle,
+          description: input.description,
+          imageUrl: input.imageUrl,
+          icon: input.icon,
+          sortOrder: input.sortOrder,
+          isActive: input.isActive,
+        }),
+      ),
+    deleteApplication: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ input }) => deleteApplicationScene(input.id)),
     uploadImage: adminProcedure.input(uploadInputSchema).mutation(async ({ input }) => {
       const buffer = Buffer.from(input.base64Data, "base64");
       const uploaded = await storagePut(buildUploadKey(input.fileName), buffer, input.contentType);

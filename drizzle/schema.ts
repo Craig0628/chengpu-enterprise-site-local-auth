@@ -98,6 +98,19 @@ export const banners = mysqlTable("banners", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const applicationScenes = mysqlTable("application_scenes", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 180 }).notNull(),
+  subtitle: text("subtitle"),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  icon: varchar("icon", { length: 32 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /**
  * 代码段作用：定义 company_settings 企业信息表
  * 包含字段：企业名称、地址、电话、邮箱、传真、网站等
@@ -125,7 +138,7 @@ export type NewsItem = typeof news.$inferSelect;
 export type InsertNewsItem = typeof news.$inferInsert;
 
 export type Banner = typeof banners.$inferSelect;
-export type InsertBanner = typeof banners.$inferInsert;
-
+export type InsertBanner = typeof banners.$inferInsert;export type ApplicationScene = typeof applicationScenes.$inferSelect;
+export type InsertApplicationScene = typeof applicationScenes.$inferInsert;
 export type CompanySetting = typeof companySettings.$inferSelect;
 export type InsertCompanySetting = typeof companySettings.$inferInsert;

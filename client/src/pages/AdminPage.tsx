@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
@@ -13,6 +14,7 @@ const menuItems = [
   { key: "dashboard", label: "仪表盘", icon: <BarChart3 className="h-4 w-4" /> },
   { key: "news", label: "新闻管理", icon: <Newspaper className="h-4 w-4" /> },
   { key: "products", label: "产品管理", icon: <Package2 className="h-4 w-4" /> },
+  { key: "applications", label: "产品应用", icon: <Layers3 className="h-4 w-4" /> },
   { key: "banners", label: "Banner 管理", icon: <ImageUp className="h-4 w-4" /> },
   { key: "categories", label: "分类管理", icon: <Layers3 className="h-4 w-4" /> },
   { key: "users", label: "管理员管理", icon: <Users className="h-4 w-4" /> },
@@ -55,6 +57,16 @@ const emptyCategoryForm = {
   description: "",
   parentId: "",
   level: "1",
+};
+
+const emptyApplicationForm = {
+  title: "",
+  subtitle: "",
+  description: "",
+  imageUrl: "",
+  icon: "",
+  sortOrder: 0,
+  isActive: true,
 };
 
 async function fileToBase64(file: File) {
@@ -121,6 +133,51 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (value: 
   );
 }
 
+function getErrorMessage(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) {
+    const anyError = error as any;
+
+    if (anyError.data?.zodError) {
+      const fieldErrors = anyError.data.zodError.fieldErrors;
+      const messages = Object.values(fieldErrors).flat().filter(Boolean) as string[];
+      if (messages.length > 0) return messages[0];
+      const formErrors = anyError.data.zodError.formErrors?.flat().filter(Boolean) as string[];
+      if (formErrors?.length) return formErrors[0];
+    }
+
+    if (typeof anyError.message === "string") {
+      const message = anyError.message;
+
+      if (message.includes("Failed query:")) {
+        if (/Duplicate entry/.test(message)) {
+          return "操作失败：存在重复项，请检查 slug 或其他唯一字段。";
+        }
+        if (/foreign key constraint/.test(message) || /Cannot add or update a child row/.test(message)) {
+          return "操作失败：关联数据不存在，请检查分类或其他关联字段。";
+        }
+        return "操作失败：数据库写入失败，请检查输入后重试。";
+      }
+
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.message) {
+          return parsed[0].message;
+        }
+      } catch {
+        // ignore parse failures
+      }
+      return message;
+    }
+  }
+  if (error && typeof error === "object") {
+    const anyError = error as any;
+    if (typeof anyError.message === "string") return anyError.message;
+    if (Array.isArray(anyError) && anyError[0]?.message) return anyError[0].message;
+  }
+  return "创建失败，请检查输入后重试。";
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -133,6 +190,15 @@ export default function AdminPage() {
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [editingBannerId, setEditingBannerId] = useState<number | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [applicationForm, setApplicationForm] = useState(emptyApplicationForm);
+  const [editingApplicationId, setEditingApplicationId] = useState<number | null>(null);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserConfirmPassword, setNewUserConfirmPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"user" | "admin">("admin");
+  const [newUserError, setNewUserError] = useState<string | null>(null);
 
   const dashboardQuery = trpc.admin.dashboard.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const usersQuery = trpc.admin.users.useQuery(undefined, { enabled: user?.role === "admin", retry: false, refetchOnWindowFocus: false });
@@ -140,20 +206,189 @@ export default function AdminPage() {
   const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
   const bannersQuery = trpc.admin.banners.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
   const categoriesQuery = trpc.admin.categories.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
+  const applicationsQuery = trpc.admin.applications.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
 
-  const createNewsMutation = trpc.admin.createNews.useMutation({ onSuccess: async () => { toast.success("新闻已发布"); setNewsForm(emptyNewsForm); setEditingNewsId(null); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
-  const updateNewsMutation = trpc.admin.updateNews.useMutation({ onSuccess: async () => { toast.success("新闻已更新"); setNewsForm(emptyNewsForm); setEditingNewsId(null); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
-  const deleteNewsMutation = trpc.admin.deleteNews.useMutation({ onSuccess: async () => { toast.success("新闻已删除"); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
-  const createProductMutation = trpc.admin.createProduct.useMutation({ onSuccess: async () => { toast.success("产品已保存"); setProductForm(emptyProductForm); setEditingProductId(null); await utils.admin.products.invalidate(); await utils.site.products.invalidate(); } });
-  const updateProductMutation = trpc.admin.updateProduct.useMutation({ onSuccess: async () => { toast.success("产品已更新"); setProductForm(emptyProductForm); setEditingProductId(null); await utils.admin.products.invalidate(); await utils.site.products.invalidate(); } });
-  const deleteProductMutation = trpc.admin.deleteProduct.useMutation({ onSuccess: async () => { toast.success("产品已删除"); await utils.admin.products.invalidate(); await utils.site.products.invalidate(); } });
-  const createBannerMutation = trpc.admin.createBanner.useMutation({ onSuccess: async () => { toast.success("Banner 已新增"); setBannerForm(emptyBannerForm); setEditingBannerId(null); await utils.admin.banners.invalidate(); await utils.site.home.invalidate(); } });
-  const updateBannerMutation = trpc.admin.updateBanner.useMutation({ onSuccess: async () => { toast.success("Banner 已更新"); setBannerForm(emptyBannerForm); setEditingBannerId(null); await utils.admin.banners.invalidate(); await utils.site.home.invalidate(); } });
-  const deleteBannerMutation = trpc.admin.deleteBanner.useMutation({ onSuccess: async () => { toast.success("Banner 已删除"); await utils.admin.banners.invalidate(); await utils.site.home.invalidate(); } });
-  const createCategoryMutation = trpc.admin.createCategory.useMutation({ onSuccess: async () => { toast.success("分类已新增"); setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
-  const updateCategoryMutation = trpc.admin.updateCategory.useMutation({ onSuccess: async () => { toast.success("分类已更新"); setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
-  const deleteCategoryMutation = trpc.admin.deleteCategory.useMutation({ onSuccess: async () => { toast.success("分类已删除"); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
+  const createNewsMutation = trpc.admin.createNews.useMutation({ onSuccess: async () => {
+      toast.success("新闻已发布");
+      setNewsForm(emptyNewsForm);
+      setEditingNewsId(null);
+      try {
+        await utils.admin.news.invalidate();
+        await utils.site.news.invalidate();
+      } catch (error) {
+        console.error("News invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateNewsMutation = trpc.admin.updateNews.useMutation({ onSuccess: async () => {
+      toast.success("新闻已更新");
+      setNewsForm(emptyNewsForm);
+      setEditingNewsId(null);
+      try {
+        await utils.admin.news.invalidate();
+        await utils.site.news.invalidate();
+      } catch (error) {
+        console.error("News invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteNewsMutation = trpc.admin.deleteNews.useMutation({ onSuccess: async () => {
+      toast.success("新闻已删除");
+      try {
+        await utils.admin.news.invalidate();
+        await utils.site.news.invalidate();
+      } catch (error) {
+        console.error("News invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createProductMutation = trpc.admin.createProduct.useMutation({ onSuccess: async () => {
+      toast.success("产品已保存");
+      setProductForm(emptyProductForm);
+      setEditingProductId(null);
+      try {
+        await utils.admin.products.invalidate();
+        await utils.site.products.invalidate();
+      } catch (error) {
+        console.error("Product invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateProductMutation = trpc.admin.updateProduct.useMutation({ onSuccess: async () => {
+      toast.success("产品已更新");
+      setProductForm(emptyProductForm);
+      setEditingProductId(null);
+      try {
+        await utils.admin.products.invalidate();
+        await utils.site.products.invalidate();
+      } catch (error) {
+        console.error("Product invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteProductMutation = trpc.admin.deleteProduct.useMutation({ onSuccess: async () => {
+      toast.success("产品已删除");
+      try {
+        await utils.admin.products.invalidate();
+        await utils.site.products.invalidate();
+      } catch (error) {
+        console.error("Product invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createBannerMutation = trpc.admin.createBanner.useMutation({ onSuccess: async () => {
+      toast.success("Banner 已新增");
+      setBannerForm(emptyBannerForm);
+      setEditingBannerId(null);
+      try {
+        await utils.admin.banners.invalidate();
+        await utils.site.home.invalidate();
+      } catch (error) {
+        console.error("Banner invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateBannerMutation = trpc.admin.updateBanner.useMutation({ onSuccess: async () => {
+      toast.success("Banner 已更新");
+      setBannerForm(emptyBannerForm);
+      setEditingBannerId(null);
+      try {
+        await utils.admin.banners.invalidate();
+        await utils.site.home.invalidate();
+      } catch (error) {
+        console.error("Banner invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteBannerMutation = trpc.admin.deleteBanner.useMutation({ onSuccess: async () => {
+      toast.success("Banner 已删除");
+      try {
+        await utils.admin.banners.invalidate();
+        await utils.site.home.invalidate();
+      } catch (error) {
+        console.error("Banner invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createCategoryMutation = trpc.admin.createCategory.useMutation({ onSuccess: async () => {
+      toast.success("分类已新增");
+      setCategoryForm(emptyCategoryForm);
+      setEditingCategoryId(null);
+      try {
+        await utils.admin.categories.invalidate();
+        await utils.site.categories.invalidate();
+      } catch (error) {
+        console.error("Category invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateCategoryMutation = trpc.admin.updateCategory.useMutation({ onSuccess: async () => {
+      toast.success("分类已更新");
+      setCategoryForm(emptyCategoryForm);
+      setEditingCategoryId(null);
+      try {
+        await utils.admin.categories.invalidate();
+        await utils.site.categories.invalidate();
+      } catch (error) {
+        console.error("Category invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteCategoryMutation = trpc.admin.deleteCategory.useMutation({ onSuccess: async () => {
+      toast.success("分类已删除");
+      try {
+        await utils.admin.categories.invalidate();
+        await utils.site.categories.invalidate();
+      } catch (error) {
+        console.error("Category invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createApplicationMutation = trpc.admin.createApplication.useMutation({ onSuccess: async () => {
+      toast.success("应用已新增");
+      setApplicationForm(emptyApplicationForm);
+      setEditingApplicationId(null);
+      try {
+        await utils.admin.applications.invalidate();
+        await utils.site.applications.invalidate();
+      } catch (error) {
+        console.error("Application invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateApplicationMutation = trpc.admin.updateApplication.useMutation({ onSuccess: async () => {
+      toast.success("应用已更新");
+      setApplicationForm(emptyApplicationForm);
+      setEditingApplicationId(null);
+      try {
+        await utils.admin.applications.invalidate();
+        await utils.site.applications.invalidate();
+      } catch (error) {
+        console.error("Application invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteApplicationMutation = trpc.admin.deleteApplication.useMutation({ onSuccess: async () => {
+      toast.success("应用已删除");
+      try {
+        await utils.admin.applications.invalidate();
+        await utils.site.applications.invalidate();
+      } catch (error) {
+        console.error("Application invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
   const updateUserRoleMutation = trpc.admin.updateUserRole.useMutation({ onSuccess: async () => { toast.success("角色已更新"); await utils.admin.users.invalidate(); } });
+  const deleteLocalUserMutation = trpc.admin.deleteLocalUser.useMutation({ onSuccess: async () => {
+      toast.success("管理员已删除");
+      try {
+        await utils.admin.users.invalidate();
+      } catch (error) {
+        console.error("User invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const registerLocalUserMutation = trpc.auth.localRegister.useMutation({
+    onSuccess: async () => {
+      toast.success("本地账户已创建");
+      setNewUserEmail("");
+      setNewUserName("");
+      setNewUserPassword("");
+      setNewUserConfirmPassword("");
+      setNewUserRole("admin");
+      setNewUserError(null);
+      setIsCreateUserOpen(false);
+      await utils.auth.listLocalUsers.invalidate();
+      await utils.admin.users.invalidate();
+    },
+    onError: (error) => {
+      setNewUserError(getErrorMessage(error));
+    },
+  });
   const uploadImageMutation = trpc.admin.uploadImage.useMutation();
 
   const metrics = dashboardQuery.data?.metrics;
@@ -241,7 +476,8 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
               <p>该后台入口受登录保护，并通过角色区分 admin 与 user。admin 具备内容发布、图片上传和用户角色管理能力，user 可以登录查看后台概况，但不具备敏感操作权限。</p>
-              <p>图片上传统一写入 S3，并返回 CDN 链接供官网与后台复用，不使用本地静态存储。</p>
+              <p>图片上传统一使用本地静态存储，存入/client/public/images/enterprise-site目录下。</p>
+              {/* <p>图片上传统一写入 S3，并返回 CDN 链接供官网与后台复用，不使用本地静态存储。</p> */}
             </CardContent>
           </Card>
         </div>
@@ -459,9 +695,157 @@ export default function AdminPage() {
         </div>
       ) : null}
 
+      {activeKey === "applications" ? (
+        <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+          <Card className="rounded-[1.8rem] border-slate-200 shadow-none">
+            <CardHeader><CardTitle>新增产品应用</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <Input placeholder="应用标题" value={applicationForm.title} onChange={e => setApplicationForm(current => ({ ...current, title: e.target.value }))} />
+              <Input placeholder="副标题" value={applicationForm.subtitle} onChange={e => setApplicationForm(current => ({ ...current, subtitle: e.target.value }))} />
+              <Textarea placeholder="应用描述" value={applicationForm.description} onChange={e => setApplicationForm(current => ({ ...current, description: e.target.value }))} />
+              <div className="space-y-2">
+                <Input placeholder="图片 URL" value={applicationForm.imageUrl} onChange={e => setApplicationForm(current => ({ ...current, imageUrl: e.target.value }))} />
+                <Input type="file" accept="image/*" onChange={e => uploadImage(e, url => setApplicationForm(current => ({ ...current, imageUrl: url })))} />
+              </div>
+              <Input placeholder="图标（可选，emoji 或短文本）" value={applicationForm.icon} onChange={e => setApplicationForm(current => ({ ...current, icon: e.target.value }))} />
+              <Input type="number" min={0} placeholder="排序值" value={String(applicationForm.sortOrder)} onChange={e => setApplicationForm(current => ({ ...current, sortOrder: Number(e.target.value) }))} />
+              <div className="flex items-center gap-3">
+                <input
+                  id="app-is-active"
+                  type="checkbox"
+                  checked={applicationForm.isActive}
+                  onChange={e => setApplicationForm(current => ({ ...current, isActive: e.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-500"
+                />
+                <label htmlFor="app-is-active" className="text-sm text-slate-600">启用应用</label>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button className="rounded-full bg-sky-700 px-6 hover:bg-sky-800" disabled={!canManageContent || createApplicationMutation.isPending || updateApplicationMutation.isPending} onClick={() => {
+                  if (!ensureRequired(applicationForm.title, "应用标题")) return;
+                  editingApplicationId ? updateApplicationMutation.mutate({
+                    id: editingApplicationId,
+                    ...applicationForm,
+                  }) : createApplicationMutation.mutate(applicationForm);
+                }}>
+                  {editingApplicationId ? "更新应用" : "保存应用"}
+                </Button>
+                {editingApplicationId ? <Button type="button" variant="outline" className="rounded-full" onClick={() => { setEditingApplicationId(null); setApplicationForm(emptyApplicationForm); }}>取消编辑</Button> : null}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-[1.8rem] border-slate-200 shadow-none">
+            <CardHeader><CardTitle>产品应用列表</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              {(applicationsQuery.data || []).map(item => (
+                <div key={item.id} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-semibold text-slate-950">{item.title}</p>
+                      <p className="mt-2 text-sm text-slate-500">{item.subtitle || ""}</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="rounded-full" disabled={!canManageContent} onClick={() => {
+                        setEditingApplicationId(item.id);
+                        setApplicationForm({
+                          title: item.title,
+                          subtitle: item.subtitle || "",
+                          description: item.description || "",
+                          imageUrl: item.imageUrl || "",
+                          icon: item.icon || "",
+                          sortOrder: item.sortOrder ?? 0,
+                          isActive: item.isActive ?? true,
+                        });
+                      }}>编辑</Button>
+                      <Button variant="outline" className="rounded-full" disabled={!canManageContent} onClick={() => deleteApplicationMutation.mutate({ id: item.id })}>删除</Button>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                    <span>排序：{item.sortOrder ?? 0}</span>
+                    <span>状态：{item.isActive ? "已启用" : "已禁用"}</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
       {activeKey === "users" ? (
         <Card className="rounded-[1.8rem] border-slate-200 shadow-none">
-          <CardHeader><CardTitle>管理员管理</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle>管理员管理</CardTitle>
+              {isAdmin ? (
+                <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="rounded-full bg-sky-700 text-white hover:bg-sky-800">新增</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>新增管理员</DialogTitle>
+                      <DialogDescription>创建本地登录账号并指定角色。</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      {newUserError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{newUserError}</p> : null}
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">邮箱</label>
+                          <Input value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="admin@example.com" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">用户名</label>
+                          <Input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="管理员名称" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">密码</label>
+                          <Input type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="至少8个字符" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-700">确认密码</label>
+                          <Input type="password" value={newUserConfirmPassword} onChange={e => setNewUserConfirmPassword(e.target.value)} placeholder="再次输入密码" />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-sm font-medium text-slate-700">角色</label>
+                          <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as "user" | "admin")} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="admin">管理员</option>
+                            <option value="user">普通用户</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setIsCreateUserOpen(false)} className="rounded-full">取消</Button>
+                        <Button
+                          className="rounded-full"
+                          disabled={registerLocalUserMutation.isPending || !newUserEmail || !newUserName || !newUserPassword || !newUserConfirmPassword || newUserPassword !== newUserConfirmPassword}
+                          onClick={async () => {
+                            setNewUserError(null);
+                            if (newUserPassword !== newUserConfirmPassword) {
+                              setNewUserError("两次输入的密码不一致");
+                              return;
+                            }
+
+                            try {
+                              await registerLocalUserMutation.mutateAsync({
+                                email: newUserEmail,
+                                name: newUserName,
+                                password: newUserPassword,
+                                role: newUserRole,
+                              });
+                            } catch (error) {
+                              setNewUserError(getErrorMessage(error));
+                            }
+                          }}
+                        >
+                          {registerLocalUserMutation.isPending ? "创建中..." : "创建账户"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              ) : null}
+            </div>
+          </CardHeader>
           <CardContent className="space-y-4">
             {!isAdmin ? <p className="text-sm text-slate-500">当前账号仅可查看后台概览，管理员管理仅对 admin 开放。</p> : null}
             {(usersQuery.data || []).map(item => (
@@ -471,11 +855,17 @@ export default function AdminPage() {
                   <p className="mt-2 text-sm text-slate-500">{item.email || "暂无邮箱"}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <Button variant={item.role === "admin" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "admin" })}>
+                  <Button variant={item.role === "admin" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending || deleteLocalUserMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "admin" })}>
                     设为 admin
                   </Button>
-                  <Button variant={item.role === "user" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "user" })}>
+                  <Button variant={item.role === "user" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending || deleteLocalUserMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "user" })}>
                     设为 user
+                  </Button>
+                  <Button variant="outline" className="rounded-full text-red-600 border-red-200 hover:bg-red-50" disabled={!isAdmin || deleteLocalUserMutation.isPending || item.id === user?.id} onClick={() => {
+                    if (!window.confirm("确认删除该管理员账号？")) return;
+                    deleteLocalUserMutation.mutate({ userId: item.id });
+                  }}>
+                    删除
                   </Button>
                 </div>
               </div>

@@ -10,7 +10,7 @@ export const siteConfig = {
   },
 };
 
-const heroImage = "/images/header.png";
+const heroImage = "/images/hreo.png";
 
 export const fallbackData = {
   banners: [
@@ -213,6 +213,42 @@ export const fallbackProducts = fallbackData.products;
 export const fallbackNews = fallbackData.news;
 export const applicationScenes = fallbackData.applications;
 
+export const honorPageData = {
+  intro: "公司已通过多项行业资质认证，具备高标准的工程实施与质量保障能力。",
+  items: [
+    {
+      title: "防水防腐保温工程专业承包一级资质",
+      description: "国家级资质认证，可承接大型防腐保温工程项目。",
+    },
+    {
+      title: "ISO 9001 质量管理体系认证",
+      description: "通过完整的质量管理体系审核，确保产品稳定可控。",
+    },
+    {
+      title: "行业优秀供应商与工程承包奖",
+      description: "获得多家客户与行业机构的认可与推荐。",
+    },
+  ],
+};
+
+export const researchPageData = {
+  intro: "公司设有专业研发中心，专注聚氨酯材料配方、设备与工艺的持续优化。",
+  items: [
+    {
+      title: "新材料研发",
+      description: "聚焦高性能聚氨酯硬泡与复合材料的配方研发。",
+    },
+    {
+      title: "工艺与设备优化",
+      description: "优化生产工艺与装备，提升产品质量与产能稳定性。",
+    },
+    {
+      title: "工程技术支持",
+      description: "为冷库、建筑、食品及工业保温工程提供整体解决方案。",
+    },
+  ],
+};
+
 // 导出关于我们数据
 export const aboutPageData = {
   summary: fallbackData.aboutContent.intro,
@@ -228,7 +264,7 @@ export const aboutPageData = {
     "聚氨酯行业领先企业",
   ],
   contacts: {
-    address: fallbackData.aboutContent.applicationFields[0] || "浙江省绍兴市越城区孙端街道许家桥村7幢1楼",
+    address: siteConfig.company.address || "浙江省绍兴市越城区孙端街道许家桥村7幢1楼",
     phone: siteConfig.company.phone,
     email: siteConfig.company.email,
   },
