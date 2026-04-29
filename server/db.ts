@@ -136,6 +136,13 @@ export async function updateUserRole(userId: number, role: "admin" | "user") {
   return result[0] ?? null;
 }
 
+export async function deleteUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(users).where(eq(users.id, userId));
+  return { success: true } as const;
+}
+
 export async function listCategories() {
   const db = await getDb();
   if (!db) return [];

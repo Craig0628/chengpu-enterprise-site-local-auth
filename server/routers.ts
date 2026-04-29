@@ -44,6 +44,7 @@ import {
   updateProduct,
   updateUserPassword,
   updateUserRole,
+  deleteUser,
   upsertCompanySetting,
 } from "./db";
 import { systemRouter } from "./_core/systemRouter";
@@ -388,6 +389,14 @@ export const appRouter = router({
     updateUserRole: adminProcedure
       .input(z.object({ userId: z.number().int(), role: z.enum(["admin", "user"]) }))
       .mutation(async ({ input }) => updateUserRole(input.userId, input.role)),
+    deleteLocalUser: adminProcedure
+      .input(z.object({ userId: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.id === input.userId) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "不能删除当前登录用户" });
+        }
+        return deleteUser(input.userId);
+      }),
     categories: adminProcedure.query(async () => listCategories()),
     createCategory: adminProcedure
       .input(categoryInputSchema)

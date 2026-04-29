@@ -364,6 +364,14 @@ export default function AdminPage() {
       }
     }, onError: error => { toast.error(getErrorMessage(error)); } });
   const updateUserRoleMutation = trpc.admin.updateUserRole.useMutation({ onSuccess: async () => { toast.success("角色已更新"); await utils.admin.users.invalidate(); } });
+  const deleteLocalUserMutation = trpc.admin.deleteLocalUser.useMutation({ onSuccess: async () => {
+      toast.success("管理员已删除");
+      try {
+        await utils.admin.users.invalidate();
+      } catch (error) {
+        console.error("User invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
   const registerLocalUserMutation = trpc.auth.localRegister.useMutation({
     onSuccess: async () => {
       toast.success("本地账户已创建");
@@ -468,7 +476,8 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
               <p>该后台入口受登录保护，并通过角色区分 admin 与 user。admin 具备内容发布、图片上传和用户角色管理能力，user 可以登录查看后台概况，但不具备敏感操作权限。</p>
-              <p>图片上传统一写入 S3，并返回 CDN 链接供官网与后台复用，不使用本地静态存储。</p>
+              <p>图片上传统一使用本地静态存储，存入/client/public/images/enterprise-site目录下。</p>
+              {/* <p>图片上传统一写入 S3，并返回 CDN 链接供官网与后台复用，不使用本地静态存储。</p> */}
             </CardContent>
           </Card>
         </div>
@@ -846,11 +855,17 @@ export default function AdminPage() {
                   <p className="mt-2 text-sm text-slate-500">{item.email || "暂无邮箱"}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <Button variant={item.role === "admin" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "admin" })}>
+                  <Button variant={item.role === "admin" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending || deleteLocalUserMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "admin" })}>
                     设为 admin
                   </Button>
-                  <Button variant={item.role === "user" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "user" })}>
+                  <Button variant={item.role === "user" ? "default" : "outline"} className="rounded-full" disabled={!isAdmin || updateUserRoleMutation.isPending || deleteLocalUserMutation.isPending} onClick={() => updateUserRoleMutation.mutate({ userId: item.id, role: "user" })}>
                     设为 user
+                  </Button>
+                  <Button variant="outline" className="rounded-full text-red-600 border-red-200 hover:bg-red-50" disabled={!isAdmin || deleteLocalUserMutation.isPending || item.id === user?.id} onClick={() => {
+                    if (!window.confirm("确认删除该管理员账号？")) return;
+                    deleteLocalUserMutation.mutate({ userId: item.id });
+                  }}>
+                    删除
                   </Button>
                 </div>
               </div>
