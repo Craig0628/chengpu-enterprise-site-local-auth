@@ -147,15 +147,27 @@ function getErrorMessage(error: unknown): string {
     }
 
     if (typeof anyError.message === "string") {
+      const message = anyError.message;
+
+      if (message.includes("Failed query:")) {
+        if (/Duplicate entry/.test(message)) {
+          return "操作失败：存在重复项，请检查 slug 或其他唯一字段。";
+        }
+        if (/foreign key constraint/.test(message) || /Cannot add or update a child row/.test(message)) {
+          return "操作失败：关联数据不存在，请检查分类或其他关联字段。";
+        }
+        return "操作失败：数据库写入失败，请检查输入后重试。";
+      }
+
       try {
-        const parsed = JSON.parse(anyError.message);
+        const parsed = JSON.parse(message);
         if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.message) {
           return parsed[0].message;
         }
       } catch {
         // ignore parse failures
       }
-      return anyError.message;
+      return message;
     }
   }
   if (error && typeof error === "object") {
@@ -196,21 +208,161 @@ export default function AdminPage() {
   const categoriesQuery = trpc.admin.categories.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
   const applicationsQuery = trpc.admin.applications.useQuery(undefined, { enabled: Boolean(user), retry: false, refetchOnWindowFocus: false });
 
-  const createNewsMutation = trpc.admin.createNews.useMutation({ onSuccess: async () => { toast.success("新闻已发布"); setNewsForm(emptyNewsForm); setEditingNewsId(null); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
-  const updateNewsMutation = trpc.admin.updateNews.useMutation({ onSuccess: async () => { toast.success("新闻已更新"); setNewsForm(emptyNewsForm); setEditingNewsId(null); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
-  const deleteNewsMutation = trpc.admin.deleteNews.useMutation({ onSuccess: async () => { toast.success("新闻已删除"); await utils.admin.news.invalidate(); await utils.site.news.invalidate(); } });
-  const createProductMutation = trpc.admin.createProduct.useMutation({ onSuccess: async () => { toast.success("产品已保存"); setProductForm(emptyProductForm); setEditingProductId(null); await utils.admin.products.invalidate(); await utils.site.products.invalidate(); } });
-  const updateProductMutation = trpc.admin.updateProduct.useMutation({ onSuccess: async () => { toast.success("产品已更新"); setProductForm(emptyProductForm); setEditingProductId(null); await utils.admin.products.invalidate(); await utils.site.products.invalidate(); } });
-  const deleteProductMutation = trpc.admin.deleteProduct.useMutation({ onSuccess: async () => { toast.success("产品已删除"); await utils.admin.products.invalidate(); await utils.site.products.invalidate(); } });
-  const createBannerMutation = trpc.admin.createBanner.useMutation({ onSuccess: async () => { toast.success("Banner 已新增"); setBannerForm(emptyBannerForm); setEditingBannerId(null); await utils.admin.banners.invalidate(); await utils.site.home.invalidate(); } });
-  const updateBannerMutation = trpc.admin.updateBanner.useMutation({ onSuccess: async () => { toast.success("Banner 已更新"); setBannerForm(emptyBannerForm); setEditingBannerId(null); await utils.admin.banners.invalidate(); await utils.site.home.invalidate(); } });
-  const deleteBannerMutation = trpc.admin.deleteBanner.useMutation({ onSuccess: async () => { toast.success("Banner 已删除"); await utils.admin.banners.invalidate(); await utils.site.home.invalidate(); } });
-  const createCategoryMutation = trpc.admin.createCategory.useMutation({ onSuccess: async () => { toast.success("分类已新增"); setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
-  const updateCategoryMutation = trpc.admin.updateCategory.useMutation({ onSuccess: async () => { toast.success("分类已更新"); setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
-  const deleteCategoryMutation = trpc.admin.deleteCategory.useMutation({ onSuccess: async () => { toast.success("分类已删除"); await utils.admin.categories.invalidate(); await utils.site.categories.invalidate(); } });
-  const createApplicationMutation = trpc.admin.createApplication.useMutation({ onSuccess: async () => { toast.success("应用已新增"); setApplicationForm(emptyApplicationForm); setEditingApplicationId(null); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
-  const updateApplicationMutation = trpc.admin.updateApplication.useMutation({ onSuccess: async () => { toast.success("应用已更新"); setApplicationForm(emptyApplicationForm); setEditingApplicationId(null); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
-  const deleteApplicationMutation = trpc.admin.deleteApplication.useMutation({ onSuccess: async () => { toast.success("应用已删除"); await utils.admin.applications.invalidate(); await utils.site.applications.invalidate(); } });
+  const createNewsMutation = trpc.admin.createNews.useMutation({ onSuccess: async () => {
+      toast.success("新闻已发布");
+      setNewsForm(emptyNewsForm);
+      setEditingNewsId(null);
+      try {
+        await utils.admin.news.invalidate();
+        await utils.site.news.invalidate();
+      } catch (error) {
+        console.error("News invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateNewsMutation = trpc.admin.updateNews.useMutation({ onSuccess: async () => {
+      toast.success("新闻已更新");
+      setNewsForm(emptyNewsForm);
+      setEditingNewsId(null);
+      try {
+        await utils.admin.news.invalidate();
+        await utils.site.news.invalidate();
+      } catch (error) {
+        console.error("News invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteNewsMutation = trpc.admin.deleteNews.useMutation({ onSuccess: async () => {
+      toast.success("新闻已删除");
+      try {
+        await utils.admin.news.invalidate();
+        await utils.site.news.invalidate();
+      } catch (error) {
+        console.error("News invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createProductMutation = trpc.admin.createProduct.useMutation({ onSuccess: async () => {
+      toast.success("产品已保存");
+      setProductForm(emptyProductForm);
+      setEditingProductId(null);
+      try {
+        await utils.admin.products.invalidate();
+        await utils.site.products.invalidate();
+      } catch (error) {
+        console.error("Product invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateProductMutation = trpc.admin.updateProduct.useMutation({ onSuccess: async () => {
+      toast.success("产品已更新");
+      setProductForm(emptyProductForm);
+      setEditingProductId(null);
+      try {
+        await utils.admin.products.invalidate();
+        await utils.site.products.invalidate();
+      } catch (error) {
+        console.error("Product invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteProductMutation = trpc.admin.deleteProduct.useMutation({ onSuccess: async () => {
+      toast.success("产品已删除");
+      try {
+        await utils.admin.products.invalidate();
+        await utils.site.products.invalidate();
+      } catch (error) {
+        console.error("Product invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createBannerMutation = trpc.admin.createBanner.useMutation({ onSuccess: async () => {
+      toast.success("Banner 已新增");
+      setBannerForm(emptyBannerForm);
+      setEditingBannerId(null);
+      try {
+        await utils.admin.banners.invalidate();
+        await utils.site.home.invalidate();
+      } catch (error) {
+        console.error("Banner invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateBannerMutation = trpc.admin.updateBanner.useMutation({ onSuccess: async () => {
+      toast.success("Banner 已更新");
+      setBannerForm(emptyBannerForm);
+      setEditingBannerId(null);
+      try {
+        await utils.admin.banners.invalidate();
+        await utils.site.home.invalidate();
+      } catch (error) {
+        console.error("Banner invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteBannerMutation = trpc.admin.deleteBanner.useMutation({ onSuccess: async () => {
+      toast.success("Banner 已删除");
+      try {
+        await utils.admin.banners.invalidate();
+        await utils.site.home.invalidate();
+      } catch (error) {
+        console.error("Banner invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createCategoryMutation = trpc.admin.createCategory.useMutation({ onSuccess: async () => {
+      toast.success("分类已新增");
+      setCategoryForm(emptyCategoryForm);
+      setEditingCategoryId(null);
+      try {
+        await utils.admin.categories.invalidate();
+        await utils.site.categories.invalidate();
+      } catch (error) {
+        console.error("Category invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateCategoryMutation = trpc.admin.updateCategory.useMutation({ onSuccess: async () => {
+      toast.success("分类已更新");
+      setCategoryForm(emptyCategoryForm);
+      setEditingCategoryId(null);
+      try {
+        await utils.admin.categories.invalidate();
+        await utils.site.categories.invalidate();
+      } catch (error) {
+        console.error("Category invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteCategoryMutation = trpc.admin.deleteCategory.useMutation({ onSuccess: async () => {
+      toast.success("分类已删除");
+      try {
+        await utils.admin.categories.invalidate();
+        await utils.site.categories.invalidate();
+      } catch (error) {
+        console.error("Category invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const createApplicationMutation = trpc.admin.createApplication.useMutation({ onSuccess: async () => {
+      toast.success("应用已新增");
+      setApplicationForm(emptyApplicationForm);
+      setEditingApplicationId(null);
+      try {
+        await utils.admin.applications.invalidate();
+        await utils.site.applications.invalidate();
+      } catch (error) {
+        console.error("Application invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const updateApplicationMutation = trpc.admin.updateApplication.useMutation({ onSuccess: async () => {
+      toast.success("应用已更新");
+      setApplicationForm(emptyApplicationForm);
+      setEditingApplicationId(null);
+      try {
+        await utils.admin.applications.invalidate();
+        await utils.site.applications.invalidate();
+      } catch (error) {
+        console.error("Application invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
+  const deleteApplicationMutation = trpc.admin.deleteApplication.useMutation({ onSuccess: async () => {
+      toast.success("应用已删除");
+      try {
+        await utils.admin.applications.invalidate();
+        await utils.site.applications.invalidate();
+      } catch (error) {
+        console.error("Application invalidate failed", error);
+      }
+    }, onError: error => { toast.error(getErrorMessage(error)); } });
   const updateUserRoleMutation = trpc.admin.updateUserRole.useMutation({ onSuccess: async () => { toast.success("角色已更新"); await utils.admin.users.invalidate(); } });
   const registerLocalUserMutation = trpc.auth.localRegister.useMutation({
     onSuccess: async () => {
@@ -656,7 +808,7 @@ export default function AdminPage() {
                         <Button variant="outline" onClick={() => setIsCreateUserOpen(false)} className="rounded-full">取消</Button>
                         <Button
                           className="rounded-full"
-                          disabled={registerLocalUserMutation.isLoading || !newUserEmail || !newUserName || !newUserPassword || !newUserConfirmPassword || newUserPassword !== newUserConfirmPassword}
+                          disabled={registerLocalUserMutation.isPending || !newUserEmail || !newUserName || !newUserPassword || !newUserConfirmPassword || newUserPassword !== newUserConfirmPassword}
                           onClick={async () => {
                             setNewUserError(null);
                             if (newUserPassword !== newUserConfirmPassword) {
@@ -676,7 +828,7 @@ export default function AdminPage() {
                             }
                           }}
                         >
-                          {registerLocalUserMutation.isLoading ? "创建中..." : "创建账户"}
+                          {registerLocalUserMutation.isPending ? "创建中..." : "创建账户"}
                         </Button>
                       </div>
                     </div>

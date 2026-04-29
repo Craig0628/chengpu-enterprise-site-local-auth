@@ -48,6 +48,16 @@ export async function getDb() {
   return _db;
 }
 
+function extractInsertId(result: unknown): number | null {
+  if (typeof result === "object" && result !== null && "insertId" in result) {
+    const value = Number((result as any).insertId);
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+  return null;
+}
+
 /**
  * 代码段作用：更新或插入用户信息（upsert 操作）
  * 调用方法：upsertUser({ openId: "用户ID", email: "邮箱", name: "用户名" ... })
@@ -142,8 +152,9 @@ export async function getCategoryById(id: number) {
 export async function createCategory(input: InsertCategory) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(categories).values(input)) as { insertId?: number };
-  return getCategoryById(Number(result.insertId));
+  const result = await db.insert(categories).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getCategoryById(insertId) : null;
 }
 
 export async function updateCategory(id: number, input: Partial<InsertCategory>) {
@@ -181,8 +192,9 @@ export async function getApplicationSceneById(id: number) {
 export async function createApplicationScene(input: InsertApplicationScene) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(applicationScenes).values(input)) as { insertId?: number };
-  return getApplicationSceneById(Number(result.insertId));
+  const result = await db.insert(applicationScenes).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getApplicationSceneById(insertId) : null;
 }
 
 export async function updateApplicationScene(id: number, input: Partial<InsertApplicationScene>) {
@@ -286,8 +298,12 @@ export async function getProductById(id: number) {
 export async function createProduct(input: InsertProduct) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(products).values(input)) as { insertId?: number };
-  return getProductById(Number(result.insertId));
+  const result = await db.insert(products).values(input);
+  const insertId = extractInsertId(result);
+  if (insertId) {
+    return getProductById(insertId);
+  }
+  return getProductBySlug(input.slug);
 }
 
 export async function updateProduct(id: number, input: Partial<InsertProduct>) {
@@ -382,8 +398,9 @@ export async function getNewsById(id: number) {
 export async function createNews(input: InsertNewsItem) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(news).values(input)) as { insertId?: number };
-  return getNewsById(Number(result.insertId));
+  const result = await db.insert(news).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getNewsById(insertId) : getNewsBySlug(input.slug);
 }
 
 export async function updateNews(id: number, input: Partial<InsertNewsItem>) {
@@ -424,8 +441,9 @@ export async function getBannerById(id: number) {
 export async function createBanner(input: InsertBanner) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = (await db.insert(banners).values(input)) as { insertId?: number };
-  return getBannerById(Number(result.insertId));
+  const result = await db.insert(banners).values(input);
+  const insertId = extractInsertId(result);
+  return insertId ? getBannerById(insertId) : null;
 }
 
 export async function updateBanner(id: number, input: Partial<InsertBanner>) {

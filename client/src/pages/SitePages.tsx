@@ -8,8 +8,10 @@ import {
   fallbackNews,
   fallbackProducts,
   formatDate,
+  honorPageData,
   parseJsonList,
   parseParameters,
+  researchPageData,
 } from "@/lib/site-data";
 import { ChevronLeft, ChevronRight, Mail, MapPin, Phone } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -288,6 +290,58 @@ export function NewsDetailPage({ params }: { params: { slug: string } }) {
   );
 }
 
+export function HonorPage() {
+  return (
+    <SiteShell>
+      <section className="bg-linear-to-r from-[#E6F7FF] via-[#E6F7FF] to-[#E6F7FF] py-20 text-[#262626]">
+        <div className="container space-y-5">
+          <SectionHeading eyebrow="Honor" title="荣誉资质" description="展示公司资质认证、行业荣誉与技术认证，增强客户信任。" />
+        </div>
+      </section>
+
+      <section className="bg-[#F8FFFC] py-16">
+        <div className="container grid gap-8">
+          <p className="max-w-3xl text-base leading-8 text-[#33332E]/80">{honorPageData.intro}</p>
+          <div className="grid gap-6 md:grid-cols-3">
+            {honorPageData.items.map(item => (
+              <div key={item.title} className="rounded-[2rem] border border-[#D9E2EC] bg-white p-8 shadow-sm">
+                <h3 className="text-xl font-semibold text-[#1A1A18]">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-[#33332E]/80">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </SiteShell>
+  );
+}
+
+export function ResearchPage() {
+  return (
+    <SiteShell>
+      <section className="bg-linear-to-r from-[#E6F7FF] via-[#E6F7FF] to-[#E6F7FF] py-20 text-[#262626]">
+        <div className="container space-y-5">
+          <SectionHeading eyebrow="R&D Center" title="研发中心" description="展示公司研发能力、技术创新与工程支持能力。" />
+        </div>
+      </section>
+
+      <section className="bg-white py-16">
+        <div className="container grid gap-8">
+          <p className="max-w-3xl text-base leading-8 text-[#33332E]/80">{researchPageData.intro}</p>
+          <div className="space-y-6">
+            {researchPageData.items.map(item => (
+              <div key={item.title} className="rounded-[2rem] border border-[#D9E2EC] bg-[#F8FFFC] p-8 shadow-sm">
+                <h3 className="text-2xl font-semibold text-[#1A1A18]">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-[#33332E]/80">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </SiteShell>
+  );
+}
+
 export function AboutPage() {
   return (
     <SiteShell>
@@ -307,7 +361,7 @@ export function AboutPage() {
             </div>
             <div className="overflow-hidden rounded-[2rem] border border-[#D9E2EC]">
               <img
-                src="/images/header.png"
+                src="/images/company.jpg"
                 alt="企业展示"
                 className="h-[340px] w-full object-cover"
               />

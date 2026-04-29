@@ -19,7 +19,7 @@ import 'swiper/css/thumbs';
 
 const stats = [
   { label: "公司成立时间", value: "2008 年" },
-  { label: "注册资本", value: "1008 万" },
+  { label: "注册资本", value: "2000 万" },
   { label: "年产组合聚醚", value: "15000 吨" },
   { label: "年售异氰酸酯", value: "10000 吨" }, // 参考 HTML 中第四个数据
 ];
