@@ -113,8 +113,8 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  // 在开发环境中使用本地文件存储
-  if (process.env.NODE_ENV !== "production" && (!ENV.forgeApiUrl || !ENV.forgeApiKey)) {
+  // 当前版本使用本地文件存储
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
     return localStoragePut(relKey, data, contentType);
   }
 
