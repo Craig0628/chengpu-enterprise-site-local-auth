@@ -52,6 +52,15 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "public")
       : path.resolve(import.meta.dirname, "public");
+
+
+  // 上传图片的目录（保证图片访问）
+  const PROJECT_ROOT = process.cwd(); // /data/chengpu-enterprise
+  const uploadImagePath = path.resolve(PROJECT_ROOT, "client", "public", "images");
+
+  console.log("✅ 前端页面目录：", distPath);
+  console.log("✅ 图片上传目录：", uploadImagePath);
+
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -59,9 +68,11 @@ export function serveStatic(app: Express) {
   }
 
   app.use(express.static(distPath));
+  //单独托管 /images 路径 → 指向上传目录
+  app.use("/images", express.static(uploadImagePath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  app.use((_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
