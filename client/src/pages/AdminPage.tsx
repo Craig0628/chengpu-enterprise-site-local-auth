@@ -395,7 +395,11 @@ export default function AdminPage() {
   const categories = categoriesQuery.data || [];
   const isAdmin = user?.role === "admin";
 
-  async function uploadImage(event: ChangeEvent<HTMLInputElement>, cb: (url: string) => void) {
+  async function uploadImage(
+    event: ChangeEvent<HTMLInputElement>,
+    cb: (url: string) => void,
+    options?: { appendGallery?: boolean },
+  ) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
@@ -406,6 +410,24 @@ export default function AdminPage() {
         base64Data,
       });
       cb(result.url);
+      if (options?.appendGallery) {
+        setProductForm(current => {
+          let gallery = [] as string[];
+          try {
+            gallery = JSON.parse(current.gallery || "[]");
+            if (!Array.isArray(gallery)) gallery = [];
+          } catch {
+            gallery = [];
+          }
+          if (!gallery.includes(result.url)) {
+            gallery = [...gallery, result.url];
+          }
+          return {
+            ...current,
+            gallery: JSON.stringify(gallery),
+          };
+        });
+      }
       toast.success("图片已上传至 S3/CDN");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "图片上传失败");
@@ -547,7 +569,7 @@ export default function AdminPage() {
               <Textarea placeholder='参数 JSON，例如 [{"label":"规格","value":"50mm"}]' value={productForm.parameters} onChange={e => setProductForm(current => ({ ...current, parameters: e.target.value }))} />
               <div className="space-y-2">
                 <Input placeholder="封面图片 URL" value={productForm.coverImage} onChange={e => setProductForm(current => ({ ...current, coverImage: e.target.value }))} />
-                <Input type="file" accept="image/*" onChange={e => uploadImage(e, url => setProductForm(current => ({ ...current, coverImage: url })))} />
+                <Input type="file" accept="image/*" onChange={e => uploadImage(e, url => setProductForm(current => ({ ...current, coverImage: url })), { appendGallery: true })} />
               </div>
               <Textarea placeholder='相册 JSON，例如 ["https://..."]' value={productForm.gallery} onChange={e => setProductForm(current => ({ ...current, gallery: e.target.value }))} />
               <div className="flex flex-wrap gap-3">
