@@ -395,6 +395,38 @@ export default function AdminPage() {
   const categories = categoriesQuery.data || [];
   const isAdmin = user?.role === "admin";
 
+  const productGallery = useMemo(() => {
+    try {
+      const parsed = JSON.parse(productForm.gallery || "[]");
+      if (!Array.isArray(parsed)) {
+        return { urls: [] as string[], error: "相册内容应为字符串数组，例如 [\"https://...\"]" };
+      }
+      const urls = parsed.filter((item: unknown): item is string => typeof item === "string");
+      if (urls.length !== parsed.length) {
+        return { urls, error: "相册数组只能包含图片 URL 字符串" };
+      }
+      return { urls, error: null };
+    } catch {
+      return { urls: [], error: productForm.gallery.trim() ? "相册 JSON 格式错误" : null };
+    }
+  }, [productForm.gallery]);
+
+  function removeGalleryImage(url: string) {
+    setProductForm(current => {
+      let gallery: string[] = [];
+      try {
+        const parsed = JSON.parse(current.gallery || "[]");
+        gallery = Array.isArray(parsed) ? parsed.filter((item: unknown): item is string => typeof item === "string") : [];
+      } catch {
+        gallery = [];
+      }
+      return {
+        ...current,
+        gallery: JSON.stringify(gallery.filter(item => item !== url)),
+      };
+    });
+  }
+
   async function uploadImage(
     event: ChangeEvent<HTMLInputElement>,
     cb: (url: string) => void,
@@ -572,6 +604,52 @@ export default function AdminPage() {
                 <Input type="file" accept="image/*" onChange={e => uploadImage(e, url => setProductForm(current => ({ ...current, coverImage: url })), { appendGallery: true })} />
               </div>
               <Textarea placeholder='相册 JSON，例如 ["https://..."]' value={productForm.gallery} onChange={e => setProductForm(current => ({ ...current, gallery: e.target.value }))} />
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-slate-600">相册预览（点击设置为封面）</p>
+                  <label className="inline-flex cursor-pointer items-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-100">
+                    上传相册图片
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={e => uploadImage(e, () => {}, { appendGallery: true })}
+                    />
+                  </label>
+                </div>
+                {productGallery.error ? (
+                  <p className="text-sm text-red-600">{productGallery.error}</p>
+                ) : productGallery.urls.length ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {productGallery.urls.map((url, index) => (
+                      <div key={`${url}-${index}`} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                        <button
+                          type="button"
+                          className="block h-28 w-full"
+                          onClick={() => setProductForm(current => ({ ...current, coverImage: url }))}
+                        >
+                          <img src={url} alt={`相册 ${index + 1}`} className="h-28 w-full object-cover" />
+                        </button>
+                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/40 px-2 py-1 text-xs text-white">
+                          <span>{index + 1}</span>
+                          <button
+                            type="button"
+                            className="rounded-full bg-white/90 px-2 text-slate-900 hover:bg-white"
+                            onClick={e => {
+                              e.stopPropagation();
+                              removeGalleryImage(url);
+                            }}
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">当前相册为空，上传图片后会自动追加到相册。</p>
+                )}
+              </div>
               <div className="flex flex-wrap gap-3">
                 <Button className="rounded-full bg-sky-700 px-6 hover:bg-sky-800" disabled={!canManageContent || createProductMutation.isPending || updateProductMutation.isPending || !productForm.categoryId} onClick={() => {
                   if (!ensureRequired(productForm.name, "产品名称") || !ensureRequired(productForm.slug, "产品 slug")) return;
